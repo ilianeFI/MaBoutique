@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} — MaBoutique{% endblock %}
+{% block nav_products %}active{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <img src="{{ product.image.url }}" width="300">
+    </div>
+    <div>
+        <h1><i class="bi bi-box-seam"></i> {{ product.name }}</h1>
+        <p>Fiche détaillée du produit</p>
+    </div>
+    <a href="{% url 'product_list' %}" class="btn btn-outline-custom">
+        <i class="bi bi-arrow-left"></i> Retour au catalogue
+    </a>
+</div>
+
+<!-- Content Grid -->
+<div class="row g-4">
+
+    <!-- Main Info Card -->
+    <div class="col-lg-8">
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <i class="bi bi-info-circle"></i> Informations du produit
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-custom">
+                    <tbody>
+                        <tr>
+                            <td style="width:40%; color: var(--text-muted); font-weight:500; font-size:.85rem; text-transform:uppercase; letter-spacing:.4px;">
+                                <div class="cell-label"></div>
+                                <i class="bi bi-tag me-2 text-accent"></i>Nom
+                            </td>
+                            <td><strong>{{ product.name }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--text-muted); font-weight:500; font-size:.85rem; text-transform:uppercase; letter-spacing:.4px;">
+                                <i class="bi bi-currency-dollar me-2 text-accent"></i>Prix
+                            </td>
+                            <td>
+                                <span style="font-family:'Playfair Display',serif; font-size:1.25rem; font-weight:700;">
+                                    {{ product.price }} MAD
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--text-muted); font-weight:500; font-size:.85rem; text-transform:uppercase; letter-spacing:.4px;">
+                                <i class="bi bi-boxes me-2 text-accent"></i>Quantité en stock
+                            </td>
+                            <td>{{ product.quantity }} unité{{ product.quantity|pluralize }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Sidebar -->
+    <div class="col-lg-4 d-flex flex-column gap-3">
+
+        <!-- Stock status -->
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-boxes"></i></div>
+            <div class="stat-value">{{ product.quantity }}</div>
+            <div class="stat-label">Unités en stock</div>
+            <div class="mt-2">
+                {% if product.quantity == 0 %}
+                    <span class="badge-custom badge-danger">Épuisé</span>
+                {% elif product.quantity <= 5 %}
+                    <span class="badge-custom badge-warning">Faible stock</span>
+                {% else %}
+                    <span class="badge-custom badge-success">Disponible</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Price -->
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+            <div class="stat-value">{{ product.price }}</div>
+            <div class="stat-label">Prix unitaire (MAD)</div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Action Buttons -->
+<div class="d-flex flex-wrap gap-2 mt-4">
+
+    <a href="{% url 'product_list' %}" class="btn btn-outline-custom ms-auto">
+        <i class="bi bi-arrow-left"></i> Retour
+    </a>
+</div>
+
+{% endblock %}

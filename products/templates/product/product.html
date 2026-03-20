@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Produits — MaBoutique{% endblock %}
+{% block nav_products %}active{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div>
+        <h1><i class="bi bi-grid-fill"></i> Catalogue Produits</h1>
+        <p>{{ products|length }} produit{{ products|length|pluralize }} disponible{{ products|length|pluralize }}</p>
+    </div>
+
+</div>
+
+<!-- Table -->
+<div class="table-wrapper">
+
+    <!-- Toolbar -->
+    <div class="table-toolbar">
+        <h5><i class="bi bi-table"></i> Liste des produits</h5>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <div class="input-group" style="width: 230px;">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Rechercher un produit…">
+            </div>
+        </div>
+    </div>
+
+    <!-- Responsive Table -->
+    <div class="table-responsive">
+        <table class="table table-custom" id="productTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Produit</th>
+                    <th>Prix</th>
+                    <th>Stock</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td>
+                        <div class="cell-label">#</div>
+                        <span class="text-muted" style="font-size:.82rem;">{{ forloop.counter }}</span>
+                    </td>
+                    <td>
+                        <div class="cell-label">Produit</div>
+                        <span class="fw-600">{{ p.name }}</span>
+                    </td>
+                    <td>
+                        <div class="cell-label">Prix</div>
+                        <span class="fw-600">{{ p.price }} MAD</span>
+                    </td>
+                    <td>
+                        <div class="cell-label">Stock</div>
+                        {{ p.quantity }}
+                    </td>
+                    <td>
+                        <div class="cell-label">Statut</div>
+                        {% if p.quantity == 0 %}
+                            <span class="badge-custom badge-danger">Épuisé</span>
+                        {% elif p.quantity <= 5 %}
+                            <span class="badge-custom badge-warning">Faible stock</span>
+                        {% else %}
+                            <span class="badge-custom badge-success">Disponible</span>
+                        {% endif %}
+                    </td>
+                   <td>
+                    <div class="cell-label">Actions</div>
+                    <div class="d-flex gap-2 flex-wrap">
+
+                        <!-- View -->
+                        <a href="{{ p.id }}"
+                           class="btn btn-outline-custom btn-sm"
+                           title="Voir les détails">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <form action="{% url 'add_to_cart' p.id %}" method="post">
+                            {% csrf_token %}
+                            <button class="btn btn-outline-custom btn-sm" title="addCart" type="submit"><i class="bi bi-cart"></i></button>
+                        </form>
+
+
+
+                        </div>
+                </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Footer row -->
+    {% if products %}
+    <div class="px-3 py-2 d-flex flex-wrap justify-content-between align-items-center gap-2"
+         style="border-top: 1px solid var(--border); font-size:.83rem; color: var(--text-muted);">
+        <span id="resultCount">{{ products|length }} produit{{ products|length|pluralize }}</span>
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    // Live search filter
+    const input = document.getElementById('searchInput');
+    const rows  = document.querySelectorAll('#productTable tbody tr');
+    const count = document.getElementById('resultCount');
+
+    if (input) {
+        input.addEventListener('input', () => {
+            const q = input.value.toLowerCase().trim();
+            let visible = 0;
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                const show = text.includes(q);
+                row.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+            if (count) count.textContent = visible + ' produit' + (visible !== 1 ? 's' : '');
+        });
+    }
+</script>
+{% endblock %}
