@@ -58,7 +58,8 @@ python manage.py migrate
 Run the development server:
 
 python manage.py runserver
-Notes
+
+Notes:
 
 Do not commit your .env file or any sensitive data.
 
