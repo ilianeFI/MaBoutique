@@ -2,136 +2,421 @@
 {% block title %}Produits — MaBoutique{% endblock %}
 {% block nav_products %}active{% endblock %}
 
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+    --gold:     #c9a96e;
+    --gold-dim: rgba(201,169,110,.12);
+    --ink:      #0a0a0a;
+    --smoke:    #f0ede8;
+}
+
+/* ── page header ─────────────────────────────────── */
+.shop-header {
+    padding: 2.5rem 0 2.5rem;
+    display: flex; flex-wrap: wrap;
+    align-items: flex-end; justify-content: space-between;
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2.5rem;
+    animation: fadeDown .5s ease both;
+}
+
+.shop-header__left .eyebrow {
+    font-family: 'Outfit', sans-serif;
+    font-size: .68rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 3px; color: var(--gold);
+    display: flex; align-items: center; gap: .7rem; margin-bottom: .6rem;
+}
+.shop-header__left .eyebrow::before { content:''; width:28px; height:1px; background:var(--gold); }
+
+.shop-header__left h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem,3.5vw,3rem); font-weight: 300; line-height: 1;
+    color: var(--brand-dark); margin: 0;
+}
+.shop-header__left h1 em { font-style: italic; color: var(--gold); }
+
+.shop-header__right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+
+.shop-search {
+    display: flex; align-items: center;
+    background: #fff; border: 1.5px solid var(--border);
+    border-radius: 9px; overflow: hidden;
+    transition: border-color .25s, box-shadow .25s; width: 260px;
+}
+.shop-search:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,169,110,.15); }
+.shop-search i { padding: 0 .75rem; color: var(--text-muted); font-size: .9rem; }
+.shop-search input {
+    border: none; outline: none;
+    font-family: 'Outfit', sans-serif; font-size: .88rem; font-weight: 300;
+    color: var(--ink); background: transparent;
+    padding: .65rem .5rem .65rem 0; width: 100%;
+}
+.shop-search input::placeholder { color: #bbb; }
+
+.shop-count {
+    font-family: 'Outfit', sans-serif; font-size: .8rem;
+    color: var(--text-muted); white-space: nowrap;
+}
+
+/* ── grid ────────────────────────────────────────── */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+    gap: 1.5rem; margin-bottom: 3rem;
+}
+
+/* ── card ────────────────────────────────────────── */
+.product-card {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden;
+    display: flex; flex-direction: column;
+    text-decoration: none; color: inherit; cursor: pointer;
+    /* start hidden for scroll-reveal */
+    opacity: 0; transform: translateY(30px);
+    transition: opacity .55s ease, transform .55s ease, box-shadow .3s ease;
+}
+
+.product-card.visible { opacity: 1; transform: translateY(0); }
+
+.product-card:hover {
+    box-shadow: 0 24px 60px rgba(10,10,10,.13);
+    transform: translateY(-8px) !important;
+    text-decoration: none; color: inherit;
+}
+
+/* ── image ───────────────────────────────────────── */
+.product-card__img {
+    width: 100%; aspect-ratio: 4/3;
+    background: var(--brand-light);
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.product-card__img img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform .65s cubic-bezier(.25,.46,.45,.94), filter .4s ease;
+}
+
+.product-card:hover .product-card__img img {
+    transform: scale(1.09);
+    filter: brightness(1.04);
+}
+
+/* fallback icon */
+.product-card__img-icon {
+    font-size: 3.2rem; color: rgba(201,169,110,.25);
+    transition: transform .4s ease, color .35s ease;
+    position: relative; z-index: 0;
+}
+.product-card:hover .product-card__img-icon { transform: scale(1.12) rotate(-4deg); color: var(--gold); }
+
+/* badge */
+.product-card__badge {
+    position: absolute; top: .85rem; left: .85rem; z-index: 2;
+    font-family: 'Outfit', sans-serif;
+    font-size: .62rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    padding: .3em .8em; border-radius: 20px;
+    backdrop-filter: blur(6px);
+}
+.badge--available { background: rgba(26,122,74,.12);  color:#1a7a4a; border:1px solid rgba(26,122,74,.25); }
+.badge--low       { background: rgba(183,110,0,.12);  color:#b76e00; border:1px solid rgba(183,110,0,.25); }
+.badge--out       { background: rgba(185,28,28,.12);  color:#b91c1c; border:1px solid rgba(185,28,28,.25); }
+
+/* hover overlay */
+.product-card__overlay {
+    position: absolute; inset: 0; z-index: 1;
+    background: rgba(10,10,10,.48);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .3s ease;
+}
+.product-card:hover .product-card__overlay { opacity: 1; }
+
+.product-card__overlay-btn {
+    font-family: 'Outfit', sans-serif;
+    font-size: .72rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 2.5px; color: #fff;
+    border: 1px solid rgba(255,255,255,.7);
+    padding: .6rem 1.6rem; border-radius: 4px;
+    transform: translateY(10px); opacity: 0;
+    transition: transform .3s ease .05s, opacity .3s ease .05s,
+                background .25s, border-color .25s;
+}
+.product-card:hover .product-card__overlay-btn {
+    transform: translateY(0); opacity: 1;
+    background: rgba(255,255,255,.1); border-color: #fff;
+}
+
+/* ── body ────────────────────────────────────────── */
+.product-card__body {
+    padding: 1.1rem 1.3rem .9rem; flex: 1;
+}
+
+.product-card__name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem; font-weight: 600; color: var(--ink);
+    line-height: 1.25; margin-bottom: .22rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.product-card__ref {
+    font-family: 'Outfit', sans-serif;
+    font-size: .71rem; color: var(--text-muted); font-weight: 300;
+    margin-bottom: .7rem;
+}
+
+.product-card__price-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+}
+
+.product-card__price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.45rem; font-weight: 600; color: var(--ink); line-height: 1;
+}
+.product-card__price sup {
+    font-size: .72rem; font-weight: 300; color: var(--text-muted);
+    font-family: 'Outfit', sans-serif; margin-left: .2rem;
+}
+
+.product-card__stock {
+    font-family: 'Outfit', sans-serif;
+    font-size: .71rem; color: var(--text-muted);
+    display: flex; align-items: center; gap: .3rem;
+}
+
+/* ── footer / cart ───────────────────────────────── */
+.product-card__footer { padding: .9rem 1.3rem; border-top: 1px solid var(--border); }
+
+.btn-cart {
+    width: 100%;
+    font-family: 'Outfit', sans-serif;
+    font-size: .73rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.8px; color: var(--ink);
+    background: var(--gold); border: none; border-radius: 8px;
+    padding: .68rem 1rem;
+    display: flex; align-items: center; justify-content: center; gap: .5rem;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: color .3s ease;
+}
+.btn-cart::before {
+    content: ''; position: absolute; inset: 0; background: var(--ink);
+    transform: translateY(101%);
+    transition: transform .32s cubic-bezier(.4,0,.2,1);
+}
+.btn-cart:hover { color: #fff; }
+.btn-cart:hover::before { transform: translateY(0); }
+.btn-cart > * { position: relative; z-index: 1; }
+.btn-cart i { transition: transform .3s ease; }
+.btn-cart:hover i { transform: rotate(-8deg) scale(1.15); }
+
+.btn-cart--disabled {
+    background: var(--brand-light); color: var(--text-muted);
+    cursor: not-allowed;
+}
+.btn-cart--disabled::before { display: none; }
+
+/* ── empty / no-results ──────────────────────────── */
+.shop-empty {
+    text-align: center; padding: 5rem 2rem;
+    background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg);
+}
+.shop-empty i { font-size: 2.8rem; color: var(--border); display: block; margin-bottom: 1rem; }
+.shop-empty h4 { font-family:'Cormorant Garamond',serif; font-size:1.5rem; font-weight:300; margin-bottom:.4rem; }
+.shop-empty p  { font-size:.88rem; color:var(--text-muted); margin-bottom:1.5rem; }
+
+#noResults {
+    display: none; grid-column: 1/-1;
+    text-align: center; padding: 3rem 1rem;
+    font-family: 'Outfit', sans-serif; font-size: .9rem; color: var(--text-muted);
+}
+#noResults i { font-size: 2rem; display: block; margin-bottom: .75rem; opacity: .3; }
+
+.shop-footer-bar {
+    padding: .8rem 0; font-family:'Outfit',sans-serif; font-size:.78rem; color:var(--text-muted);
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap:.5rem;
+}
+
+/* ── keyframes ───────────────────────────────────── */
+@keyframes fadeDown { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── responsive ──────────────────────────────────── */
+@media (max-width: 768px) {
+    .product-grid { grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 1rem; }
+    .shop-header { flex-direction: column; align-items: flex-start; }
+    .shop-search { width: 100%; }
+}
+@media (max-width: 480px) {
+    .product-grid { grid-template-columns: 1fr 1fr; gap: .75rem; }
+}
+</style>
+{% endblock %}
+
+
 {% block content %}
 
-<!-- Page Header -->
-<div class="page-header">
-    <div>
-        <h1><i class="bi bi-grid-fill"></i> Catalogue Produits</h1>
-        <p>{{ products|length }} produit{{ products|length|pluralize }} disponible{{ products|length|pluralize }}</p>
+<!-- ══ Header ════════════════════════════════════════ -->
+<div class="shop-header">
+    <div class="shop-header__left">
+        <div class="eyebrow">Notre catalogue</div>
+        <h1>Tous nos <em>produits</em></h1>
     </div>
-
+    <div class="shop-header__right">
+        <div class="shop-search">
+            <i class="bi bi-search"></i>
+            <input type="text" id="searchInput" placeholder="Rechercher…" autocomplete="off">
+        </div>
+        <span class="shop-count" id="resultCount">
+            {{ products|length }} produit{{ products|length|pluralize }}
+        </span>
+    </div>
 </div>
 
-<!-- Table -->
-<div class="table-wrapper">
 
-    <!-- Toolbar -->
-    <div class="table-toolbar">
-        <h5><i class="bi bi-table"></i> Liste des produits</h5>
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-            <div class="input-group" style="width: 230px;">
-                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Rechercher un produit…">
+{% if products %}
+
+<!-- ══ Grid ══════════════════════════════════════════ -->
+<div class="product-grid" id="productGrid">
+
+    {% for p in products %}
+    <div class="product-card" onclick="window.location='{{ p.id }}'">
+
+        <!-- Image -->
+        <div class="product-card__img">
+            {% if p.image %}
+                {# Real product image from media/products/ #}
+                <img src="{{ p.image.url }}"
+                     alt="{{ p.name }}"
+                     loading="lazy"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <i class="bi bi-bag product-card__img-icon" style="display:none;"></i>
+            {% else %}
+                <i class="bi bi-bag product-card__img-icon"></i>
+            {% endif %}
+
+            {# Status badge #}
+            {% if p.quantity == 0 %}
+                <span class="product-card__badge badge--out">Épuisé</span>
+            {% elif p.quantity <= 5 %}
+                <span class="product-card__badge badge--low">Faible stock</span>
+            {% else %}
+                <span class="product-card__badge badge--available">Disponible</span>
+            {% endif %}
+
+            <div class="product-card__overlay">
+                <div class="product-card__overlay-btn">Voir le produit</div>
             </div>
         </div>
+
+        <!-- Body -->
+        <div class="product-card__body">
+            <div class="product-card__name">{{ p.name }}</div>
+            <div class="product-card__ref">Réf. #{{ p.id|stringformat:"04d" }}</div>
+            <div class="product-card__price-row">
+                <div class="product-card__price">{{ p.price }}<sup>MAD</sup></div>
+                <div class="product-card__stock">
+                    <i class="bi bi-box-seam"></i> {{ p.quantity }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Cart — stopPropagation prevents navigating to detail on click -->
+        <div class="product-card__footer" onclick="event.stopPropagation()">
+            {% if p.quantity > 0 %}
+
+                <form action="{% url 'add_to_cart' p.id %}" method="post">
+                    {% csrf_token %}
+
+                        <button type="submit" class="btn-cart">
+                            <i class="bi bi-bag-plus"></i>
+                            <span>Ajouter au panier</span>
+                        </button>
+
+
+                </form>
+            {% else %}
+                <button class="btn-cart btn-cart--disabled" disabled>
+                    <i class="bi bi-bag-x"></i>
+                    <span>Indisponible</span>
+                </button>
+            {% endif %}
+        </div>
+
     </div>
+    {% endfor %}
 
-    <!-- Responsive Table -->
-    <div class="table-responsive">
-        <table class="table table-custom" id="productTable">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Produit</th>
-                    <th>Prix</th>
-                    <th>Stock</th>
-                    <th>Statut</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in products %}
-                <tr>
-                    <td>
-                        <div class="cell-label">#</div>
-                        <span class="text-muted" style="font-size:.82rem;">{{ forloop.counter }}</span>
-                    </td>
-                    <td>
-                        <div class="cell-label">Produit</div>
-                        <span class="fw-600">{{ p.name }}</span>
-                    </td>
-                    <td>
-                        <div class="cell-label">Prix</div>
-                        <span class="fw-600">{{ p.price }} MAD</span>
-                    </td>
-                    <td>
-                        <div class="cell-label">Stock</div>
-                        {{ p.quantity }}
-                    </td>
-                    <td>
-                        <div class="cell-label">Statut</div>
-                        {% if p.quantity == 0 %}
-                            <span class="badge-custom badge-danger">Épuisé</span>
-                        {% elif p.quantity <= 5 %}
-                            <span class="badge-custom badge-warning">Faible stock</span>
-                        {% else %}
-                            <span class="badge-custom badge-success">Disponible</span>
-                        {% endif %}
-                    </td>
-                   <td>
-                    <div class="cell-label">Actions</div>
-                    <div class="d-flex gap-2 flex-wrap">
-
-                        <!-- View -->
-                        <a href="{{ p.id }}"
-                           class="btn btn-outline-custom btn-sm"
-                           title="Voir les détails">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        <form action="{% url 'add_to_cart' p.id %}" method="post">
-                            {% csrf_token %}
-                            <button class="btn btn-outline-custom btn-sm" title="addCart" type="submit"><i class="bi bi-cart"></i></button>
-                        </form>
-
-
-
-                        </div>
-                </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" class="text-center py-5">
-
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div id="noResults">
+        <i class="bi bi-search"></i>
+        Aucun produit ne correspond à votre recherche.
     </div>
-
-    <!-- Footer row -->
-    {% if products %}
-    <div class="px-3 py-2 d-flex flex-wrap justify-content-between align-items-center gap-2"
-         style="border-top: 1px solid var(--border); font-size:.83rem; color: var(--text-muted);">
-        <span id="resultCount">{{ products|length }} produit{{ products|length|pluralize }}</span>
-    </div>
-    {% endif %}
 
 </div>
+
+<div class="shop-footer-bar">
+    <span id="resultCountBottom">{{ products|length }} produit{{ products|length|pluralize }}</span>
+    <span>MaBoutique &copy; 2024</span>
+</div>
+
+{% else %}
+
+<div class="shop-empty">
+    <i class="bi bi-bag-x"></i>
+    <h4>Aucun produit disponible</h4>
+    <p>Le catalogue est vide pour le moment.</p>
+    <a href="{% url 'add_product' %}" class="btn btn-accent">
+        <i class="bi bi-plus-lg"></i> Ajouter le premier produit
+    </a>
+</div>
+
+{% endif %}
 
 {% endblock %}
 
 
 {% block extra_js %}
 <script>
-    // Live search filter
-    const input = document.getElementById('searchInput');
-    const rows  = document.querySelectorAll('#productTable tbody tr');
-    const count = document.getElementById('resultCount');
+(function () {
+    /* ─── Staggered scroll-reveal ─── */
+    const cards = document.querySelectorAll('.product-card');
 
-    if (input) {
-        input.addEventListener('input', () => {
-            const q = input.value.toLowerCase().trim();
-            let visible = 0;
-            rows.forEach(row => {
-                const text = row.innerText.toLowerCase();
-                const show = text.includes(q);
-                row.style.display = show ? '' : 'none';
-                if (show) visible++;
-            });
-            if (count) count.textContent = visible + ' produit' + (visible !== 1 ? 's' : '');
+    const io = new IntersectionObserver((entries) => {
+        entries.forEach((e, i) => {
+            if (e.isIntersecting) {
+                setTimeout(() => e.target.classList.add('visible'), i * 70);
+                io.unobserve(e.target);
+            }
         });
-    }
+    }, { threshold: 0.07 });
+
+    cards.forEach(c => io.observe(c));
+
+    /* ─── Live search ─── */
+    const input  = document.getElementById('searchInput');
+    const count  = document.getElementById('resultCount');
+    const countB = document.getElementById('resultCountBottom');
+    const noRes  = document.getElementById('noResults');
+
+    if (!input) return;
+
+    input.addEventListener('input', () => {
+        const q = input.value.toLowerCase().trim();
+        let visible = 0;
+
+        cards.forEach(card => {
+            const match = !q || card.innerText.toLowerCase().includes(q);
+            card.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+
+        const label = visible + ' produit' + (visible !== 1 ? 's' : '');
+        if (count)  count.textContent  = label;
+        if (countB) countB.textContent = label;
+        if (noRes)  noRes.style.display = (visible === 0 && q) ? 'block' : 'none';
+    });
+})();
 </script>
 {% endblock %}

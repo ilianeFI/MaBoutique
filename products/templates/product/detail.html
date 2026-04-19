@@ -2,99 +2,459 @@
 {% block title %}{{ product.name }} — MaBoutique{% endblock %}
 {% block nav_products %}active{% endblock %}
 
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+    --gold:     #c9a96e;
+    --gold-dim: rgba(201,169,110,.12);
+    --ink:      #0a0a0a;
+    --smoke:    #f0ede8;
+}
+
+/* ── breadcrumb ──────────────────────────────────── */
+.detail-breadcrumb {
+    display: flex; align-items: center; gap: .5rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: .72rem; font-weight: 400;
+    color: var(--text-muted);
+    margin-bottom: 2.5rem;
+    animation: fadeDown .4s ease both;
+}
+.detail-breadcrumb a { color: var(--text-muted); text-decoration: none; transition: color .2s; }
+.detail-breadcrumb a:hover { color: var(--gold); }
+.detail-breadcrumb .sep { opacity: .35; }
+.detail-breadcrumb .current { color: var(--ink); font-weight: 500; }
+
+/* ── main layout ─────────────────────────────────── */
+.detail-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: start;
+    margin-bottom: 4rem;
+}
+
+/* ── image panel ─────────────────────────────────── */
+.detail-img-panel {
+    position: sticky; top: 100px;
+    animation: fadeRight .6s ease .1s both;
+}
+
+.detail-img-main {
+    width: 100%; aspect-ratio: 1/1;
+    border-radius: 20px; overflow: hidden;
+    background: var(--smoke);
+    position: relative;
+    box-shadow: 0 20px 60px rgba(10,10,10,.1);
+}
+
+.detail-img-main img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform .7s cubic-bezier(.25,.46,.45,.94);
+}
+
+.detail-img-main:hover img { transform: scale(1.05); }
+
+/* no-image fallback */
+.detail-img-fallback {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: .75rem;
+    color: rgba(201,169,110,.35);
+}
+.detail-img-fallback i { font-size: 4rem; }
+.detail-img-fallback span {
+    font-family: 'Outfit', sans-serif; font-size: .75rem;
+    font-weight: 500; text-transform: uppercase; letter-spacing: 2px;
+    color: rgba(10,10,10,.25);
+}
+
+/* status ribbon */
+.detail-img-badge {
+    position: absolute; top: 1.1rem; left: 1.1rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: .62rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    padding: .35em .9em; border-radius: 20px;
+    backdrop-filter: blur(8px);
+}
+.badge--available { background: rgba(26,122,74,.12);  color:#1a7a4a; border:1px solid rgba(26,122,74,.25); }
+.badge--low       { background: rgba(183,110,0,.12);  color:#b76e00; border:1px solid rgba(183,110,0,.25); }
+.badge--out       { background: rgba(185,28,28,.12);  color:#b91c1c; border:1px solid rgba(185,28,28,.25); }
+
+/* share / ref row under image */
+.detail-img-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1rem .25rem 0;
+    font-family: 'Outfit', sans-serif;
+    font-size: .72rem; color: var(--text-muted);
+}
+
+/* ── info panel ──────────────────────────────────── */
+.detail-info {
+    animation: fadeLeft .6s ease .15s both;
+}
+
+.detail-eyebrow {
+    font-family: 'Outfit', sans-serif;
+    font-size: .68rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 3px; color: var(--gold);
+    display: flex; align-items: center; gap: .7rem; margin-bottom: .85rem;
+}
+.detail-eyebrow::before { content:''; width:28px; height:1px; background:var(--gold); }
+
+.detail-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    font-weight: 300; line-height: 1.05;
+    color: var(--ink); margin: 0 0 .5rem;
+}
+
+.detail-ref {
+    font-family: 'Outfit', sans-serif;
+    font-size: .75rem; color: var(--text-muted); margin-bottom: 2rem;
+}
+
+/* price block */
+.detail-price-block {
+    background: var(--ink);
+    border-radius: 14px;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 2rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.detail-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.8rem; font-weight: 600; color: var(--gold); line-height: 1;
+}
+.detail-price sup {
+    font-size: 1rem; font-weight: 300; color: rgba(201,169,110,.65);
+    font-family: 'Outfit', sans-serif; margin-left: .3rem;
+}
+
+.detail-price-note {
+    font-family: 'Outfit', sans-serif;
+    font-size: .72rem; color: rgba(240,237,232,.35);
+    font-weight: 300; text-align: right; line-height: 1.5;
+}
+
+/* stock info */
+.detail-stock {
+    display: flex; align-items: center; gap: 1rem;
+    margin-bottom: 2rem; flex-wrap: wrap;
+}
+
+.detail-stock__bar-wrap {
+    flex: 1; min-width: 140px;
+}
+
+.detail-stock__label {
+    font-family: 'Outfit', sans-serif;
+    font-size: .72rem; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-muted); margin-bottom: .4rem;
+    display: flex; justify-content: space-between;
+}
+
+.detail-stock__bar {
+    height: 4px; background: var(--border); border-radius: 99px; overflow: hidden;
+}
+
+.detail-stock__fill {
+    height: 100%; border-radius: 99px;
+    background: var(--gold);
+    transition: width 1s cubic-bezier(.4,0,.2,1);
+    width: 0; /* animated by JS */
+}
+.detail-stock__fill--low { background: #b76e00; }
+.detail-stock__fill--out { background: #b91c1c; width: 0 !important; }
+
+.detail-stock__count {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem; font-weight: 600; color: var(--ink);
+    line-height: 1; text-align: center;
+}
+.detail-stock__count span { display: block; font-family:'Outfit',sans-serif; font-size:.62rem; font-weight:500; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; margin-top:2px; }
+
+/* divider */
+.detail-divider { border:none; border-top:1px solid var(--border); margin:1.75rem 0; }
+
+/* specs grid */
+.detail-specs {
+    display: grid; grid-template-columns: 1fr 1fr; gap: .75rem 2rem;
+    margin-bottom: 2rem;
+}
+.detail-spec { }
+.detail-spec__label {
+    font-family: 'Outfit', sans-serif;
+    font-size: .65rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: .2rem;
+}
+.detail-spec__value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem; font-weight: 600; color: var(--ink);
+}
+
+/* actions */
+.detail-actions { display: flex; flex-direction: column; gap: .85rem; }
+
+.btn-add-detail {
+    width: 100%;
+    font-family: 'Outfit', sans-serif;
+    font-size: .78rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: var(--ink); background: var(--gold);
+    border: none; border-radius: 10px;
+    padding: 1rem 1.5rem;
+    display: flex; align-items: center; justify-content: center; gap: .6rem;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: color .3s ease;
+    text-decoration: none;
+}
+.btn-add-detail::before {
+    content:''; position:absolute; inset:0; background:var(--ink);
+    transform: translateY(101%);
+    transition: transform .32s cubic-bezier(.4,0,.2,1);
+}
+.btn-add-detail:hover { color: #fff; }
+.btn-add-detail:hover::before { transform: translateY(0); }
+.btn-add-detail > * { position:relative; z-index:1; }
+.btn-add-detail i { transition: transform .3s; }
+.btn-add-detail:hover i { transform: rotate(-8deg) scale(1.15); }
+
+.btn-add-detail--disabled {
+    background: var(--brand-light); color: var(--text-muted); cursor: not-allowed;
+}
+.btn-add-detail--disabled::before { display: none; }
+
+.btn-back-detail {
+    width: 100%;
+    font-family: 'Outfit', sans-serif;
+    font-size: .75rem; font-weight: 400;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: var(--text-muted); background: transparent;
+    border: 1.5px solid var(--border); border-radius: 10px;
+    padding: .8rem 1.5rem;
+    display: flex; align-items: center; justify-content: center; gap: .5rem;
+    text-decoration: none;
+    transition: all .28s ease;
+}
+.btn-back-detail:hover { border-color: var(--brand-dark); color: var(--ink); }
+.btn-back-detail i { transition: transform .28s; }
+.btn-back-detail:hover i { transform: translateX(-4px); }
+
+/* trust badges */
+.detail-trust {
+    display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 1.5rem;
+}
+.detail-trust__item {
+    display: flex; align-items: center; gap: .45rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: .7rem; color: var(--text-muted); font-weight: 300;
+}
+.detail-trust__item i { color: var(--gold); font-size: .85rem; }
+
+/* ── related / you may also like ─────────────────── */
+.detail-related {
+    padding-top: 3.5rem;
+    border-top: 1px solid var(--border);
+}
+.detail-related__header {
+    display: flex; align-items: baseline; gap: 1rem; margin-bottom: 2rem;
+}
+.detail-related__title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.7rem; font-weight: 300; color: var(--ink);
+}
+.detail-related__title em { font-style: italic; color: var(--gold); }
+.detail-related__line { flex:1; height:1px; background:var(--border); }
+
+/* ── animations ──────────────────────────────────── */
+@keyframes fadeDown  { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeLeft  { from{opacity:0;transform:translateX(30px)}  to{opacity:1;transform:translateX(0)} }
+@keyframes fadeRight { from{opacity:0;transform:translateX(-30px)} to{opacity:1;transform:translateX(0)} }
+
+/* ── responsive ──────────────────────────────────── */
+@media (max-width: 900px) {
+    .detail-layout { grid-template-columns: 1fr; gap: 2.5rem; }
+    .detail-img-panel { position: static; }
+    .detail-img-main { aspect-ratio: 4/3; max-height: 380px; }
+}
+@media (max-width: 576px) {
+    .detail-specs { grid-template-columns: 1fr; }
+    .detail-trust { gap: 1rem; }
+}
+</style>
+{% endblock %}
+
+
 {% block content %}
 
-<!-- Page Header -->
-<div class="page-header">
-    <div>
-        <img src="{{ product.image.url }}" width="300">
-    </div>
-    <div>
-        <h1><i class="bi bi-box-seam"></i> {{ product.name }}</h1>
-        <p>Fiche détaillée du produit</p>
-    </div>
-    <a href="{% url 'product_list' %}" class="btn btn-outline-custom">
-        <i class="bi bi-arrow-left"></i> Retour au catalogue
-    </a>
+<!-- ── Breadcrumb ─────────────────────────────────── -->
+<div class="detail-breadcrumb">
+    <a href="/"><i class="bi bi-house-door"></i></a>
+    <span class="sep">/</span>
+    <a href="{% url 'product_list' %}">Produits</a>
+    <span class="sep">/</span>
+    <span class="current">{{ product.name }}</span>
 </div>
 
-<!-- Content Grid -->
-<div class="row g-4">
 
-    <!-- Main Info Card -->
-    <div class="col-lg-8">
-        <div class="card-custom">
-            <div class="card-header-custom">
-                <i class="bi bi-info-circle"></i> Informations du produit
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-custom">
-                    <tbody>
-                        <tr>
-                            <td style="width:40%; color: var(--text-muted); font-weight:500; font-size:.85rem; text-transform:uppercase; letter-spacing:.4px;">
-                                <div class="cell-label"></div>
-                                <i class="bi bi-tag me-2 text-accent"></i>Nom
-                            </td>
-                            <td><strong>{{ product.name }}</strong></td>
-                        </tr>
-                        <tr>
-                            <td style="color: var(--text-muted); font-weight:500; font-size:.85rem; text-transform:uppercase; letter-spacing:.4px;">
-                                <i class="bi bi-currency-dollar me-2 text-accent"></i>Prix
-                            </td>
-                            <td>
-                                <span style="font-family:'Playfair Display',serif; font-size:1.25rem; font-weight:700;">
-                                    {{ product.price }} MAD
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="color: var(--text-muted); font-weight:500; font-size:.85rem; text-transform:uppercase; letter-spacing:.4px;">
-                                <i class="bi bi-boxes me-2 text-accent"></i>Quantité en stock
-                            </td>
-                            <td>{{ product.quantity }} unité{{ product.quantity|pluralize }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+<!-- ── Main layout ───────────────────────────────── -->
+<div class="detail-layout">
+
+    <!-- LEFT — Image -->
+    <div class="detail-img-panel">
+        <div class="detail-img-main">
+            {% if product.image %}
+                <img src="{{ product.image.url }}"
+                     alt="{{ product.name }}"
+                     onerror="this.parentElement.innerHTML='<div class=\'detail-img-fallback\'><i class=\'bi bi-bag\'></i><span>Aucune image</span></div>'">
+            {% else %}
+                <div class="detail-img-fallback">
+                    <i class="bi bi-bag"></i>
+                    <span>Aucune image</span>
+                </div>
+            {% endif %}
+
+            {% if product.quantity == 0 %}
+                <span class="detail-img-badge badge--out">Épuisé</span>
+            {% elif product.quantity <= 5 %}
+                <span class="detail-img-badge badge--low">Stock limité</span>
+            {% else %}
+                <span class="detail-img-badge badge--available">Disponible</span>
+            {% endif %}
+        </div>
+
+        <div class="detail-img-meta">
+            <span>Réf. #{{ product.id|stringformat:"04d" }}</span>
+            <span>MaBoutique &copy; 2024</span>
         </div>
     </div>
 
-    <!-- Status Sidebar -->
-    <div class="col-lg-4 d-flex flex-column gap-3">
 
-        <!-- Stock status -->
-        <div class="stat-card">
-            <div class="stat-icon"><i class="bi bi-boxes"></i></div>
-            <div class="stat-value">{{ product.quantity }}</div>
-            <div class="stat-label">Unités en stock</div>
-            <div class="mt-2">
-                {% if product.quantity == 0 %}
-                    <span class="badge-custom badge-danger">Épuisé</span>
-                {% elif product.quantity <= 5 %}
-                    <span class="badge-custom badge-warning">Faible stock</span>
-                {% else %}
-                    <span class="badge-custom badge-success">Disponible</span>
-                {% endif %}
+    <!-- RIGHT — Info -->
+    <div class="detail-info">
+
+        <div class="detail-eyebrow">Fiche produit</div>
+        <h1 class="detail-name">{{ product.name }}</h1>
+        <div class="detail-ref">Référence #{{ product.id|stringformat:"04d" }}</div>
+
+        <!-- Price block -->
+        <div class="detail-price-block">
+            <div class="detail-price">
+                {{ product.price }}<sup>MAD</sup>
+            </div>
+            <div class="detail-price-note">
+                Prix TTC<br>Livraison offerte
             </div>
         </div>
 
-        <!-- Price -->
-        <div class="stat-card">
-            <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
-            <div class="stat-value">{{ product.price }}</div>
-            <div class="stat-label">Prix unitaire (MAD)</div>
+        <!-- Stock bar -->
+        <div class="detail-stock">
+            <div class="detail-stock__count">
+                {{ product.quantity }}
+                <span>en stock</span>
+            </div>
+            <div class="detail-stock__bar-wrap">
+                <div class="detail-stock__label">
+                    <span>Disponibilité</span>
+                    <span>
+                        {% if product.quantity == 0 %}Épuisé
+                        {% elif product.quantity <= 5 %}Faible stock
+                        {% else %}En stock
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="detail-stock__bar">
+                    <div class="detail-stock__fill
+                        {% if product.quantity == 0 %}detail-stock__fill--out
+                        {% elif product.quantity <= 5 %}detail-stock__fill--low{% endif %}"
+                        id="stockFill"
+                        data-qty="{{ product.quantity }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="detail-divider">
+
+        <!-- Specs grid -->
+        <div class="detail-specs">
+            <div class="detail-spec">
+                <div class="detail-spec__label">Nom</div>
+                <div class="detail-spec__value">{{ product.name }}</div>
+            </div>
+            <div class="detail-spec">
+                <div class="detail-spec__label">Prix</div>
+                <div class="detail-spec__value">{{ product.price }} MAD</div>
+            </div>
+            <div class="detail-spec">
+                <div class="detail-spec__label">Quantité</div>
+                <div class="detail-spec__value">{{ product.quantity }} unité{{ product.quantity|pluralize }}</div>
+            </div>
+            <div class="detail-spec">
+                <div class="detail-spec__label">Référence</div>
+                <div class="detail-spec__value">#{{ product.id|stringformat:"04d" }}</div>
+            </div>
+        </div>
+
+        <hr class="detail-divider">
+
+        <!-- Actions -->
+        <div class="detail-actions">
+            {% if product.quantity > 0 %}
+                <form action="{% url 'add_to_cart' product.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-add-detail">
+                        <i class="bi bi-bag-plus"></i>
+                        <span>Ajouter au panier</span>
+                    </button>
+                </form>
+            {% else %}
+                <button class="btn-add-detail btn-add-detail--disabled" disabled>
+                    <i class="bi bi-bag-x"></i>
+                    <span>Produit indisponible</span>
+                </button>
+            {% endif %}
+
+            <a href="{% url 'product_list' %}" class="btn-back-detail">
+                <i class="bi bi-arrow-left"></i>
+                <span>Retour au catalogue</span>
+            </a>
+        </div>
+
+        <!-- Trust badges -->
+        <div class="detail-trust">
+            <div class="detail-trust__item">
+                <i class="bi bi-shield-fill-check"></i> Paiement sécurisé
+            </div>
+            <div class="detail-trust__item">
+                <i class="bi bi-truck"></i> Livraison offerte
+            </div>
+            <div class="detail-trust__item">
+                <i class="bi bi-arrow-counterclockwise"></i> Retours 30 jours
+            </div>
         </div>
 
     </div>
-
 </div>
 
-<!-- Action Buttons -->
-<div class="d-flex flex-wrap gap-2 mt-4">
+{% endblock %}
 
-    <a href="{% url 'product_list' %}" class="btn btn-outline-custom ms-auto">
-        <i class="bi bi-arrow-left"></i> Retour
-    </a>
-</div>
 
+{% block extra_js %}
+<script>
+    // Animate stock bar on load
+    const fill = document.getElementById('stockFill');
+    if (fill) {
+        const qty = parseInt(fill.dataset.qty) || 0;
+        const max = 50; // treat 50+ as 100%
+        const pct = Math.min((qty / max) * 100, 100);
+        setTimeout(() => { fill.style.width = pct + '%'; }, 300);
+    }
+</script>
 {% endblock %}

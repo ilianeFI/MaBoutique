@@ -466,11 +466,12 @@
                     <!-- Unit price -->
                     <div class="cart-row__price">{{ item.unit_price }} DH</div>
 
-                    <!-- Quantity with +/- controls -->
+
                     <div>
                         <div class="cart-row__qty">
                             <form method="post" action="{% url 'update_cartItem' item.id %}" style="display:contents;">
                                 {% csrf_token %}
+
                                 <input type="hidden" name="action" value="decrease" min="1">
                                 <button type="submit" class="qty-btn">−</button>
                             </form>
@@ -501,9 +502,9 @@
 
             <!-- Back link -->
             <div class="mt-3">
-                <a href="/product/" class="btn btn-outline-custom btn-sm">
+              <!--  <a href="/product/" class="btn btn-outline-custom btn-sm">
                     <i class="bi bi-arrow-left"></i> Continuer les achats
-                </a>
+                </a>-->
                 <form method="post" action="{% url 'delete_cart' %}">
                     {% csrf_token %}
                     <button class="btn btn-outline-danger btn-sm">

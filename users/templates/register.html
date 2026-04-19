@@ -1,0 +1,438 @@
+{% extends 'base.html' %}
+{% block title %}Créer un compte — MaBoutique{% endblock %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --gold:#c9a96e; --gold-dim:rgba(201,169,110,.12); --ink:#0a0a0a; --smoke:#f0ede8; }
+
+/* ── full-bleed split layout ─────────────────────── */
+.auth-wrap {
+    margin: -2.5rem calc(-50vw + 50%);
+    width: 100vw; min-height: calc(100vh - 70px);
+    display: grid; grid-template-columns: 1fr 1fr;
+    overflow: hidden;
+}
+
+/* left — image panel */
+.auth-left {
+    position: relative; overflow: hidden;
+    background: var(--ink);
+    display: flex; flex-direction: column;
+    justify-content: flex-end; padding: 4rem;
+    min-height: 100%;
+}
+
+.auth-left__bg {
+    position: absolute; inset: 0;
+}
+.auth-left__bg img {
+    width: 100%; height: 100%; object-fit: cover;
+    filter: grayscale(20%) brightness(.45);
+    animation: zoomBg 14s ease-in-out infinite alternate;
+}
+@keyframes zoomBg { from{transform:scale(1)} to{transform:scale(1.06)} }
+
+.auth-left__bg::after {
+    content:''; position:absolute; inset:0;
+    background: linear-gradient(to top, rgba(10,10,10,.92) 0%, rgba(10,10,10,.3) 60%, transparent 100%);
+}
+
+.auth-left__content { position: relative; z-index: 2; }
+
+.auth-left__tag {
+    font-family: 'Outfit', sans-serif;
+    font-size: .65rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 3px; color: var(--gold);
+    display: flex; align-items: center; gap: .7rem; margin-bottom: 1rem;
+}
+.auth-left__tag::before { content:''; width:28px; height:1px; background:var(--gold); }
+
+.auth-left__title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem,3.5vw,3.2rem); font-weight: 300; color: #fff;
+    line-height: 1.05; margin-bottom: 1.25rem;
+}
+.auth-left__title em { font-style:italic; color:var(--gold); }
+
+.auth-left__text {
+    font-family: 'Outfit', sans-serif;
+    font-size: .87rem; font-weight: 300;
+    color: rgba(255,255,255,.45); line-height: 1.75; max-width: 340px;
+    margin-bottom: 2.5rem;
+}
+
+.auth-left__perks { display:flex; flex-direction:column; gap:.65rem; }
+.auth-perk {
+    display:flex; align-items:center; gap:.75rem;
+    font-family:'Outfit',sans-serif; font-size:.78rem; font-weight:300;
+    color:rgba(255,255,255,.55);
+}
+.auth-perk i { color:var(--gold); font-size:.9rem; flex-shrink:0; }
+
+/* right — form panel */
+.auth-right {
+    background: var(--smoke);
+    display: flex; align-items: center; justify-content: center;
+    padding: 4rem 5rem;
+    animation: fadeLeft .6s ease both;
+}
+
+.auth-form-box { width: 100%; max-width: 440px; }
+
+.auth-form-box__header { margin-bottom: 2.5rem; }
+
+.auth-form-box__eyebrow {
+    font-family:'Outfit',sans-serif; font-size:.65rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:3px; color:var(--gold);
+    display:flex; align-items:center; gap:.7rem; margin-bottom:.7rem;
+}
+.auth-form-box__eyebrow::before { content:''; width:24px; height:1px; background:var(--gold); }
+
+.auth-form-box__title {
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(1.8rem,3vw,2.4rem); font-weight:300; color:var(--ink);
+    line-height:1; margin:0;
+}
+.auth-form-box__title em { font-style:italic; color:var(--gold); }
+
+.auth-form-box__sub {
+    font-family:'Outfit',sans-serif; font-size:.83rem; font-weight:300;
+    color:var(--text-muted); margin-top:.5rem;
+}
+
+/* error banner */
+.auth-error {
+    background: rgba(185,28,28,.08);
+    border: 1px solid rgba(185,28,28,.2);
+    border-left: 3px solid #b91c1c;
+    border-radius: 8px;
+    padding: .85rem 1rem;
+    margin-bottom: 1.5rem;
+    font-family:'Outfit',sans-serif; font-size:.83rem; color:#b91c1c;
+    display:flex; align-items:flex-start; gap:.55rem;
+}
+
+/* row for two-column fields */
+.auth-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+
+/* field group */
+.auth-field { margin-bottom: 1.25rem; }
+
+.auth-label {
+    display:flex; align-items:center; gap:.4rem;
+    font-family:'Outfit',sans-serif; font-size:.72rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:1.5px; color:var(--ink);
+    margin-bottom:.45rem;
+}
+.auth-label i { color:var(--gold); font-size:.8rem; }
+
+.auth-input-wrap { position:relative; }
+
+.auth-input {
+    width:100%; background:#fff;
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    padding: .75rem 1rem .75rem 2.8rem;
+    font-family:'Outfit',sans-serif; font-size:.9rem; font-weight:300;
+    color:var(--ink);
+    outline:none;
+    transition: border-color .25s, box-shadow .25s;
+}
+.auth-input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,169,110,.15);
+}
+.auth-input::placeholder { color:#bbb; }
+.auth-input.is-error { border-color:#b91c1c; }
+
+.auth-input-icon {
+    position:absolute; left:.85rem; top:50%; transform:translateY(-50%);
+    color:var(--text-muted); font-size:.85rem;
+    pointer-events:none; transition:color .25s;
+}
+.auth-input:focus ~ .auth-input-icon { color:var(--gold); }
+
+/* password toggle */
+.auth-eye {
+    position:absolute; right:.9rem; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer;
+    color:var(--text-muted); font-size:.88rem; padding:0;
+    transition:color .2s;
+}
+.auth-eye:hover { color:var(--gold); }
+
+.auth-field-error {
+    font-family:'Outfit',sans-serif; font-size:.72rem; color:#b91c1c;
+    margin-top:.35rem; display:flex; align-items:center; gap:.35rem;
+}
+
+/* strength meter */
+.auth-strength { margin-top:.5rem; }
+.auth-strength__bars {
+    display:flex; gap:4px; margin-bottom:.3rem;
+}
+.auth-strength__bar {
+    flex:1; height:3px; border-radius:99px;
+    background:var(--border); transition:background .3s;
+}
+.auth-strength__label {
+    font-family:'Outfit',sans-serif; font-size:.68rem; color:var(--text-muted);
+}
+
+/* divider */
+.auth-divider { border:none; border-top:1px solid var(--border); margin:1.5rem 0; }
+
+/* submit */
+.auth-submit {
+    width:100%;
+    font-family:'Outfit',sans-serif; font-size:.78rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:2px; color:var(--ink);
+    background:var(--gold); border:none; border-radius:10px;
+    padding:1rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:.6rem;
+    position:relative; overflow:hidden; transition:color .3s;
+    margin-bottom:1rem;
+}
+.auth-submit::before {
+    content:''; position:absolute; inset:0; background:var(--ink);
+    transform:translateY(101%); transition:transform .32s cubic-bezier(.4,0,.2,1);
+}
+.auth-submit:hover { color:#fff; }
+.auth-submit:hover::before { transform:translateY(0); }
+.auth-submit > * { position:relative; z-index:1; }
+.auth-submit i { transition:transform .3s; }
+.auth-submit:hover i { transform:translateX(5px); }
+
+.auth-link-row {
+    text-align:center;
+    font-family:'Outfit',sans-serif; font-size:.8rem; font-weight:300;
+    color:var(--text-muted);
+}
+.auth-link-row a {
+    color:var(--gold); font-weight:500; text-decoration:none;
+    border-bottom:1px solid transparent; transition:border-color .2s;
+}
+.auth-link-row a:hover { border-color:var(--gold); }
+
+/* ── animations ──────────────────────────────────── */
+@keyframes fadeLeft  { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
+
+/* ── responsive ──────────────────────────────────── */
+@media (max-width:900px) {
+    .auth-wrap { grid-template-columns:1fr; }
+    .auth-left { display:none; }
+    .auth-right { padding:3rem 2rem; min-height:100vh; }
+    .auth-row { grid-template-columns:1fr; gap:0; }
+}
+@media (max-width:480px) {
+    .auth-right { padding:2.5rem 1.25rem; }
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="auth-wrap">
+
+    <!-- ══ LEFT — Visual ══════════════════════════════ -->
+    <div class="auth-left">
+        <div class="auth-left__bg">
+            <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1000&q=80" alt="">
+        </div>
+        <div class="auth-left__content">
+            <div class="auth-left__tag">Bienvenue</div>
+            <h2 class="auth-left__title">
+                Rejoignez<br><em>MaBoutique</em>
+            </h2>
+            <p class="auth-left__text">
+                Créez votre compte et accédez à une expérience d'achat personnalisée, des offres exclusives et bien plus encore.
+            </p>
+            <div class="auth-left__perks">
+                <div class="auth-perk"><i class="bi bi-bag-heart"></i> Accès à tout le catalogue</div>
+                <div class="auth-perk"><i class="bi bi-truck"></i> Livraison offerte dès votre premier achat</div>
+                <div class="auth-perk"><i class="bi bi-bell"></i> Alertes sur vos produits favoris</div>
+                <div class="auth-perk"><i class="bi bi-shield-fill-check"></i> Compte sécurisé et confidentiel</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ RIGHT — Form ═══════════════════════════════ -->
+    <div class="auth-right">
+        <div class="auth-form-box">
+
+            <div class="auth-form-box__header">
+                <div class="auth-form-box__eyebrow">Inscription</div>
+                <h1 class="auth-form-box__title">Créer un <em>compte</em></h1>
+                <p class="auth-form-box__sub">Remplissez les champs ci-dessous pour commencer.</p>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="auth-error">
+                <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;margin-top:2px;"></i>
+                <div>{{ form.non_field_errors|join:" " }}</div>
+            </div>
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <!-- First / Last name -->
+                <div class="auth-row">
+                    <div class="auth-field">
+                        <label class="auth-label" for="id_first_name">
+                            <i class="bi bi-person"></i> Prénom
+                        </label>
+                        <div class="auth-input-wrap">
+                            <input type="text" name="first_name" id="id_first_name"
+                                   value="{{ form.first_name.value|default:'' }}"
+                                   placeholder="Yasmine"
+                                   class="auth-input {% if form.first_name.errors %}is-error{% endif %}">
+                            <i class="bi bi-person auth-input-icon"></i>
+                        </div>
+                        {% if form.first_name.errors %}
+                        <div class="auth-field-error"><i class="bi bi-exclamation-circle"></i> {{ form.first_name.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="auth-field">
+                        <label class="auth-label" for="id_last_name">
+                            <i class="bi bi-person"></i> Nom
+                        </label>
+                        <div class="auth-input-wrap">
+                            <input type="text" name="last_name" id="id_last_name"
+                                   value="{{ form.last_name.value|default:'' }}"
+                                   placeholder="Benali"
+                                   class="auth-input {% if form.last_name.errors %}is-error{% endif %}">
+                            <i class="bi bi-person auth-input-icon"></i>
+                        </div>
+                        {% if form.last_name.errors %}
+                        <div class="auth-field-error"><i class="bi bi-exclamation-circle"></i> {{ form.last_name.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Email -->
+                <div class="auth-field">
+                    <label class="auth-label" for="id_email">
+                        <i class="bi bi-envelope"></i> Adresse e-mail
+                    </label>
+                    <div class="auth-input-wrap">
+                        <input type="email" name="email" id="id_email"
+                               value="{{ form.email.value|default:'' }}"
+                               placeholder="yasmine@example.com"
+                               class="auth-input {% if form.email.errors %}is-error{% endif %}">
+                        <i class="bi bi-envelope auth-input-icon"></i>
+                    </div>
+                    {% if form.email.errors %}
+                    <div class="auth-field-error"><i class="bi bi-exclamation-circle"></i> {{ form.email.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Password -->
+                <div class="auth-field">
+                    <label class="auth-label" for="id_password">
+                        <i class="bi bi-lock"></i> Mot de passe
+                    </label>
+                    <div class="auth-input-wrap">
+                        <input type="password" name="password" id="id_password"
+                               placeholder="••••••••"
+                               class="auth-input {% if form.password.errors %}is-error{% endif %}"
+                               oninput="checkStrength(this.value)">
+                        <i class="bi bi-lock auth-input-icon"></i>
+                        <button type="button" class="auth-eye" onclick="togglePwd('id_password', this)">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                    <div class="auth-field-error"><i class="bi bi-exclamation-circle"></i> {{ form.password.errors|join:", " }}</div>
+                    {% endif %}
+                    <!-- Strength meter -->
+                    <div class="auth-strength" id="strengthMeter" style="display:none;">
+                        <div class="auth-strength__bars">
+                            <div class="auth-strength__bar" id="sb1"></div>
+                            <div class="auth-strength__bar" id="sb2"></div>
+                            <div class="auth-strength__bar" id="sb3"></div>
+                            <div class="auth-strength__bar" id="sb4"></div>
+                        </div>
+                        <div class="auth-strength__label" id="strengthLabel"></div>
+                    </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="auth-field">
+                    <label class="auth-label" for="id_password_confirm">
+                        <i class="bi bi-lock-fill"></i> Confirmer le mot de passe
+                    </label>
+                    <div class="auth-input-wrap">
+                        <input type="password" name="password_confirm" id="id_password_confirm"
+                               placeholder="••••••••"
+                               class="auth-input {% if form.password_confirm.errors %}is-error{% endif %}">
+                        <i class="bi bi-lock-fill auth-input-icon"></i>
+                        <button type="button" class="auth-eye" onclick="togglePwd('id_password_confirm', this)">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password_confirm.errors %}
+                    <div class="auth-field-error"><i class="bi bi-exclamation-circle"></i> {{ form.password_confirm.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+
+                <hr class="auth-divider">
+
+                <button type="submit" class="auth-submit">
+                    <span>Créer mon compte</span>
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+
+                <div class="auth-link-row">
+                    Déjà un compte ? <a href="{% url 'login' %}">Se connecter</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+function togglePwd(id, btn) {
+    const input = document.getElementById(id);
+    const icon  = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+
+function checkStrength(val) {
+    const meter = document.getElementById('strengthMeter');
+    const label = document.getElementById('strengthLabel');
+    const bars  = [document.getElementById('sb1'), document.getElementById('sb2'),
+                   document.getElementById('sb3'), document.getElementById('sb4')];
+
+    if (!val) { meter.style.display = 'none'; return; }
+    meter.style.display = 'block';
+
+    let score = 0;
+    if (val.length >= 8)              score++;
+    if (/[A-Z]/.test(val))           score++;
+    if (/[0-9]/.test(val))           score++;
+    if (/[^A-Za-z0-9]/.test(val))    score++;
+
+    const colors = ['#b91c1c','#b76e00','#1a7a4a','#c9a96e'];
+    const labels = ['Très faible','Faible','Bon','Excellent'];
+
+    bars.forEach((b, i) => {
+        b.style.background = i < score ? colors[score - 1] : 'var(--border)';
+    });
+    label.textContent  = labels[score - 1] || '';
+    label.style.color  = colors[score - 1] || 'var(--text-muted)';
+}
+</script>
+{% endblock %}

@@ -35,12 +35,17 @@ def add_cart(request,pk):
     )
 
     if not created:
-        cart_item.quantity+=1
-        cart_item.save()
+        if cart_item.quantity<cart_item.product.quantity:
+            cart_item.quantity+=1
+            cart_item.save()
+            messages.success(request, f"{product.name} added to cart successfully!")
+        else:
+            messages.error(request,f"Stock limit Reached")
 
-    messages.success(request, f"{product.name} added to cart successfully!")
 
-    return redirect(request.META.get('HTTP_REFERER'))
+
+    #return redirect(request.META.get('HTTP_REFERER')) cette ligne rederige lutilisatuer doù il vien
+    return redirect('cart-detail')
 
 def showCart(request):
     cart=get_or_create_cart(request)
@@ -102,6 +107,7 @@ def updateCartItem(request,pk):
 
 
     return redirect("cart-detail")
+
 
 
 

@@ -1,0 +1,366 @@
+{% extends 'base.html' %}
+{% block title %}Connexion — MaBoutique{% endblock %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --gold:#c9a96e; --gold-dim:rgba(201,169,110,.12); --ink:#0a0a0a; --smoke:#f0ede8; }
+
+/* ── full-bleed split (image RIGHT this time) ─────── */
+.auth-wrap {
+    margin: -2.5rem calc(-50vw + 50%);
+    width: 100vw; min-height: calc(100vh - 70px);
+    display: grid; grid-template-columns: 1fr 1fr;
+    overflow: hidden;
+}
+
+/* left — form (dark this time for contrast) */
+.auth-left {
+    background: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    padding: 4rem 5rem;
+    animation: fadeRight .6s ease both;
+}
+
+.auth-form-box { width: 100%; max-width: 400px; }
+
+.auth-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem; font-weight: 300; color: #fff;
+    display: flex; align-items: center; gap: .5rem;
+    margin-bottom: 3rem;
+}
+.auth-brand i { color: var(--gold); }
+.auth-brand em { font-style: italic; color: var(--gold); }
+
+.auth-form-box__eyebrow {
+    font-family:'Outfit',sans-serif; font-size:.65rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:3px; color:var(--gold);
+    display:flex; align-items:center; gap:.7rem; margin-bottom:.7rem;
+}
+.auth-form-box__eyebrow::before { content:''; width:24px; height:1px; background:var(--gold); }
+
+.auth-form-box__title {
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(2rem,3vw,2.8rem); font-weight:300; color:#fff;
+    line-height:1; margin:0 0 .4rem;
+}
+.auth-form-box__title em { font-style:italic; color:var(--gold); }
+
+.auth-form-box__sub {
+    font-family:'Outfit',sans-serif; font-size:.83rem; font-weight:300;
+    color:rgba(255,255,255,.4); margin-bottom:2.5rem;
+}
+
+/* error */
+.auth-error {
+    background: rgba(185,28,28,.1);
+    border: 1px solid rgba(185,28,28,.3);
+    border-left: 3px solid #b91c1c;
+    border-radius: 8px; padding: .85rem 1rem; margin-bottom: 1.5rem;
+    font-family:'Outfit',sans-serif; font-size:.83rem; color:#e57373;
+    display:flex; align-items:flex-start; gap:.55rem;
+}
+
+/* field */
+.auth-field { margin-bottom: 1.3rem; }
+
+.auth-label {
+    display:flex; align-items:center; gap:.4rem;
+    font-family:'Outfit',sans-serif; font-size:.72rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:1.5px;
+    color:rgba(255,255,255,.45); margin-bottom:.45rem;
+}
+.auth-label i { color:var(--gold); font-size:.78rem; }
+
+.auth-input-wrap { position:relative; }
+
+.auth-input {
+    width:100%; background:rgba(255,255,255,.05);
+    border: 1.5px solid rgba(255,255,255,.1);
+    border-radius: 9px;
+    padding: .8rem 1rem .8rem 2.8rem;
+    font-family:'Outfit',sans-serif; font-size:.9rem; font-weight:300;
+    color:#fff; outline:none;
+    transition: border-color .25s, box-shadow .25s, background .25s;
+}
+.auth-input:focus {
+    border-color: var(--gold);
+    background: rgba(201,169,110,.07);
+    box-shadow: 0 0 0 3px rgba(201,169,110,.12);
+}
+.auth-input::placeholder { color:rgba(255,255,255,.2); }
+.auth-input.is-error { border-color:rgba(185,28,28,.6); }
+
+.auth-input-icon {
+    position:absolute; left:.85rem; top:50%; transform:translateY(-50%);
+    color:rgba(255,255,255,.25); font-size:.85rem;
+    pointer-events:none; transition:color .25s;
+}
+.auth-input:focus ~ .auth-input-icon { color:var(--gold); }
+
+.auth-eye {
+    position:absolute; right:.9rem; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer;
+    color:rgba(255,255,255,.25); font-size:.88rem; padding:0;
+    transition:color .2s;
+}
+.auth-eye:hover { color:var(--gold); }
+
+.auth-field-error {
+    font-family:'Outfit',sans-serif; font-size:.72rem; color:#e57373;
+    margin-top:.35rem; display:flex; align-items:center; gap:.35rem;
+}
+
+/* forgot */
+.auth-forgot-row {
+    display:flex; justify-content:flex-end; margin-top:-.7rem; margin-bottom:1.3rem;
+}
+.auth-forgot {
+    font-family:'Outfit',sans-serif; font-size:.72rem; font-weight:400;
+    color:rgba(255,255,255,.3); text-decoration:none;
+    border-bottom:1px solid transparent; transition:all .2s;
+}
+.auth-forgot:hover { color:var(--gold); border-color:var(--gold); }
+
+/* submit */
+.auth-submit {
+    width:100%;
+    font-family:'Outfit',sans-serif; font-size:.78rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:2px; color:var(--ink);
+    background:var(--gold); border:none; border-radius:10px;
+    padding:1rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:.6rem;
+    position:relative; overflow:hidden; transition:color .3s;
+    margin-bottom:1.5rem;
+}
+.auth-submit::before {
+    content:''; position:absolute; inset:0; background:#fff;
+    transform:translateY(101%); transition:transform .32s cubic-bezier(.4,0,.2,1);
+}
+.auth-submit:hover { color:var(--ink); }
+.auth-submit:hover::before { transform:translateY(0); }
+.auth-submit > * { position:relative; z-index:1; }
+.auth-submit i { transition:transform .3s; }
+.auth-submit:hover i { transform:translateX(5px); }
+
+/* OR divider */
+.auth-or {
+    display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;
+}
+.auth-or::before, .auth-or::after {
+    content:''; flex:1; height:1px; background:rgba(255,255,255,.08);
+}
+.auth-or span {
+    font-family:'Outfit',sans-serif; font-size:.68rem; font-weight:400;
+    color:rgba(255,255,255,.2); white-space:nowrap;
+}
+
+.auth-link-row {
+    text-align:center;
+    font-family:'Outfit',sans-serif; font-size:.8rem; font-weight:300;
+    color:rgba(255,255,255,.3);
+}
+.auth-link-row a {
+    color:var(--gold); font-weight:500; text-decoration:none;
+    border-bottom:1px solid transparent; transition:border-color .2s;
+}
+.auth-link-row a:hover { border-color:var(--gold); }
+
+/* right — image panel */
+.auth-right {
+    position:relative; overflow:hidden; background:var(--ink);
+    display:flex; flex-direction:column; justify-content:flex-end; padding:4rem;
+}
+
+.auth-right__bg { position:absolute; inset:0; }
+.auth-right__bg img {
+    width:100%; height:100%; object-fit:cover;
+    filter:grayscale(15%) brightness(.5);
+    animation:zoomBg 14s ease-in-out infinite alternate;
+}
+@keyframes zoomBg { from{transform:scale(1)} to{transform:scale(1.06)} }
+
+.auth-right__bg::after {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(to top, rgba(10,10,10,.9) 0%, rgba(10,10,10,.2) 60%, transparent 100%);
+}
+
+.auth-right__content { position:relative; z-index:2; }
+
+.auth-right__quote {
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(1.4rem,2.5vw,2rem); font-weight:300; font-style:italic;
+    color:rgba(255,255,255,.7); line-height:1.4; margin-bottom:1rem;
+}
+.auth-right__quote strong { font-style:normal; font-weight:600; color:var(--gold); }
+
+.auth-right__author {
+    font-family:'Outfit',sans-serif; font-size:.7rem; font-weight:500;
+    text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,.3);
+    display:flex; align-items:center; gap:1rem;
+}
+.auth-right__author::before { content:''; width:30px; height:1px; background:rgba(255,255,255,.2); }
+
+/* stats row */
+.auth-right__stats {
+    display:flex; gap:2.5rem; margin-top:2.5rem;
+}
+.auth-right__stat .n {
+    font-family:'Cormorant Garamond',serif;
+    font-size:2rem; font-weight:600; color:#fff; line-height:1;
+}
+.auth-right__stat .n span { color:var(--gold); }
+.auth-right__stat .l {
+    font-family:'Outfit',sans-serif; font-size:.62rem; font-weight:400;
+    text-transform:uppercase; letter-spacing:1.5px; color:rgba(255,255,255,.3);
+}
+
+/* ── animations ──────────────────────────────────── */
+@keyframes fadeRight { from{opacity:0;transform:translateX(-30px)} to{opacity:1;transform:translateX(0)} }
+
+/* ── responsive ──────────────────────────────────── */
+@media (max-width:900px) {
+    .auth-wrap { grid-template-columns:1fr; }
+    .auth-right { display:none; }
+    .auth-left { padding:3rem 2rem; min-height:100vh; }
+}
+@media (max-width:480px) {
+    .auth-left { padding:2.5rem 1.25rem; }
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="auth-wrap">
+
+    <!-- ══ LEFT — Form (dark) ═════════════════════════ -->
+    <div class="auth-left">
+        <div class="auth-form-box">
+
+            <div class="auth-brand">
+                <i class="bi bi-bag-heart-fill"></i>
+                Ma<em>Boutique</em>
+            </div>
+
+            <div class="auth-form-box__eyebrow">Connexion</div>
+            <h1 class="auth-form-box__title">Bon retour <em>parmi nous</em></h1>
+            <p class="auth-form-box__sub">Connectez-vous pour accéder à votre espace personnel.</p>
+
+            {% if form.non_field_errors %}
+            <div class="auth-error">
+                <i class="bi bi-exclamation-circle-fill" style="flex-shrink:0;margin-top:2px;"></i>
+                <div>{{ form.non_field_errors|join:" " }}</div>
+            </div>
+            {% endif %}
+
+            {% if messages %}
+                {% for message in messages %}
+                <div class="auth-error" style="background:rgba(26,122,74,.1);border-color:rgba(26,122,74,.3);border-left-color:#1a7a4a;">
+                    <i class="bi bi-check-circle-fill" style="color:#4ade80;flex-shrink:0;margin-top:2px;"></i>
+                    <div style="color:#4ade80;">{{ message }}</div>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <!-- Email -->
+                <div class="auth-field">
+                    <label class="auth-label" for="id_email">
+                        <i class="bi bi-envelope"></i> Adresse e-mail
+                    </label>
+                    <div class="auth-input-wrap">
+                        <input type="email" name="email" id="id_email"
+                               value="{{ form.email.value|default:'' }}"
+                               placeholder="yasmine@example.com"
+                               class="auth-input {% if form.email.errors %}is-error{% endif %}"
+                               autofocus>
+                        <i class="bi bi-envelope auth-input-icon"></i>
+                    </div>
+                    {% if form.email.errors %}
+                    <div class="auth-field-error"><i class="bi bi-exclamation-circle"></i> {{ form.email.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Password -->
+                <div class="auth-field">
+                    <label class="auth-label" for="id_password">
+                        <i class="bi bi-lock"></i> Mot de passe
+                    </label>
+                    <div class="auth-input-wrap">
+                        <input type="password" name="password" id="id_password"
+                               placeholder="••••••••"
+                               class="auth-input {% if form.password.errors %}is-error{% endif %}">
+                        <i class="bi bi-lock auth-input-icon"></i>
+                        <button type="button" class="auth-eye" onclick="togglePwd('id_password', this)">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                    <div class="auth-field-error"><i class="bi bi-exclamation-circle"></i> {{ form.password.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="auth-forgot-row">
+                    <a href="#" class="auth-forgot">Mot de passe oublié ?</a>
+                </div>
+
+                <button type="submit" class="auth-submit">
+                    <span>Se connecter</span>
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+
+                <div class="auth-or"><span>ou</span></div>
+
+                <div class="auth-link-row">
+                    Pas encore de compte ? <a href="{% url 'register' %}">Créer un compte</a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- ══ RIGHT — Visual ════════════════════════════ -->
+    <div class="auth-right">
+        <div class="auth-right__bg">
+            <img src="https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=1000&q=80" alt="">
+        </div>
+        <div class="auth-right__content">
+            <p class="auth-right__quote">
+                « Un espace où <strong>qualité</strong> et style se rencontrent à chaque achat. »
+            </p>
+            <div class="auth-right__author">Cliente depuis 2022</div>
+            <div class="auth-right__stats">
+                <div class="auth-right__stat">
+                    <div class="n">500<span>+</span></div>
+                    <div class="l">Produits</div>
+                </div>
+                <div class="auth-right__stat">
+                    <div class="n">12<span>k</span></div>
+                    <div class="l">Clients</div>
+                </div>
+                <div class="auth-right__stat">
+                    <div class="n">5<span>★</span></div>
+                    <div class="l">Note</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+function togglePwd(id, btn) {
+    const input = document.getElementById(id);
+    const icon  = btn.querySelector('i');
+    input.type  = input.type === 'password' ? 'text' : 'password';
+    icon.className = input.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+}
+</script>
+{% endblock %}
