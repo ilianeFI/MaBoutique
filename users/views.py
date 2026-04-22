@@ -33,6 +33,7 @@ def register_view(request):
             # Hachage sécurisé du mot de passe
             user.set_password(form.cleaned_data['password'])
             user.save()
+            login(request,user)
             return redirect('home')
     else:
         form = RegisterForm()
@@ -40,6 +41,11 @@ def register_view(request):
 
 
 def logout_view(request):
+    #on recuper le panier
+    cart_id=request.session.get('cart_id')
     logout(request)
+
+    if cart_id:
+        request.session['cart_id']=cart_id
     return redirect('home')
 

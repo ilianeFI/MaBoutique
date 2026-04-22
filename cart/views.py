@@ -10,17 +10,29 @@ from django.contrib import messages
 # Create your views here.
 
 def get_or_create_cart(request):
-    cart_id=request.session.get('cart_id')
+    cart=None
+    #si utilisateur connecte:
+    if request.user.is_authenticated:
+        cart,created = Cart.objects.get_or_create(user=request.user)
 
-    if cart_id:
-        try:
-            return Cart.objects.get(id=cart_id)
-        except Cart.DoesNotExist:
-            pass
+    #si utilisateur non conncete:
+    if not cart:
+        cart_id = request.session.get('cart_id')
+        if cart_id:
+            try:
+                cart=Cart.objects.get(id=cart_id)
+            except Cart.DoesNotExist:
+                pass
+    #si aucun cart n'existe
+    if not cart:
+        #si un user est conncete
+        if request.user.is_authenticated:
+            cart = Cart.objects.create(user=request.user)
+        else:
+            cart=Cart.objects.create()
+            request.session['cart_id'] =cart.id
 
 
-    cart=Cart.objects.create()
-    request.session['cart_id']=cart.id
     return cart
 
 
