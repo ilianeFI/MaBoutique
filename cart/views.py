@@ -9,31 +9,56 @@ from django.contrib import messages
 
 # Create your views here.
 
-def get_or_create_cart(request):
-    cart=None
-    #si utilisateur connecte:
-    if request.user.is_authenticated:
-        cart,created = Cart.objects.get_or_create(user=request.user)
+def merge_cart(session_cart, user_cart):
+    # On boucle sur chaque article du panier session
+    for item in session_cart.cartitem_set.all():
+        # On cherche si le même produit existe déjà dans le panier utilisateur
+        existing_item = user_cart.cartitem_set.filter(product=item.product).first()
 
-    #si utilisateur non conncete:
-    if not cart:
-        cart_id = request.session.get('cart_id')
-        if cart_id:
-            try:
-                cart=Cart.objects.get(id=cart_id)
-            except Cart.DoesNotExist:
-                pass
-    #si aucun cart n'existe
-    if not cart:
-        #si un user est conncete
-        if request.user.is_authenticated:
-            cart = Cart.objects.create(user=request.user)
+        if existing_item:
+            # Si le produit est déjà là : on additionne juste les quantités
+            existing_item.quantity += item.quantity
+            existing_item.save()
+            # On supprime l'article du panier invité puisqu'il est fusionné
+            item.delete()
         else:
-            cart=Cart.objects.create()
-            request.session['cart_id'] =cart.id
+            # Si le produit n'existe pas : on change simplement le propriétaire du panier
+            item.cart = user_cart
+            item.save()
+
+    # Une fois tous les articles déplacés, le panier session est vide
+    session_cart.delete()
 
 
-    return cart
+def get_or_create_cart(request):
+    # 1. On récupère le panier session si il existe
+    cart_id = request.session.get('cart_id')
+    session_cart = None
+    if cart_id:
+        try:
+            session_cart = Cart.objects.get(id=cart_id)
+        except Cart.DoesNotExist:
+            request.session.pop('cart_id', None)
+
+    # 2. Si l'utilisateur est connecté
+    if request.user.is_authenticated:
+        user_cart, created = Cart.objects.get_or_create(user=request.user)
+
+        # SI un panier invité existe et n'est pas le même que le panier user
+        if session_cart and session_cart != user_cart:
+            merge_cart(session_cart, user_cart)  # On appelle la fusion
+            request.session.pop('cart_id', None)  # On nettoie la session
+
+        return user_cart
+
+    # 3. Si non connecté
+    else:
+        if session_cart:
+            return session_cart
+        else:
+            cart = Cart.objects.create()
+            request.session['cart_id'] = cart.id
+            return cart
 
 
 def add_cart(request,pk):
@@ -59,25 +84,27 @@ def add_cart(request,pk):
     #return redirect(request.META.get('HTTP_REFERER')) cette ligne rederige lutilisatuer doù il vien
     return redirect('cart-detail')
 
-def showCart(request):
-    cart=get_or_create_cart(request)
-    cart_item=CartItem.objects.filter(cart=cart).select_related("product")
-    tva=0.2
+def get_total_price(cart_item):
     total_price=0
     for item in cart_item:
-        total_price+=item.quantity*item.unit_price
+        total_price +=item.quantity*item.unit_price
+    return total_price
+
+def show_cart(request):
+    cart=get_or_create_cart(request)
+    cart_item=CartItem.objects.filter(cart=cart).select_related("product")
+    total_price=get_total_price(cart_item)
     price_ht=total_price
     tva_amount=float(total_price)*0.2
     total_price=float(price_ht)+tva_amount
-
-
-
 
     return render(request,"cart_detail.html",{
         "total_price":total_price,
         "price_ht":price_ht,
         "cart_item":cart_item
     })
+
+
 
 
 def deleteCart(request):

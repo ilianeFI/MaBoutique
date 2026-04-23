@@ -542,10 +542,13 @@
                     <span class="amount">{{ total_price|floatformat:2 }}<span>DH</span></span>
                 </div>
 
-                <a href="#" class="btn-checkout">
-                    <span>Passer commande</span>
-                    <i class="bi bi-arrow-right"></i>
-                </a>
+                <form action="{% url 'create_order' %}" method="post" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-checkout">
+                        <span>Passer commande</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                </form>
                 <a href="/product/" class="btn-continue">
                     <i class="bi bi-arrow-left"></i>
                     Retour aux produits

@@ -1,0 +1,519 @@
+{% extends 'base.html' %}
+{% block title %}Passer commande — MaBoutique{% endblock %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --gold:#c9a96e; --ink:#0a0a0a; --smoke:#f0ede8; }
+
+/* ── breadcrumb ──────────────────────────────────── */
+.ob-breadcrumb {
+    display:flex; align-items:center; gap:.5rem;
+    font-family:'Outfit',sans-serif; font-size:.72rem; color:var(--text-muted);
+    margin-bottom:2rem; animation:fadeDown .4s ease both;
+}
+.ob-breadcrumb a { color:var(--text-muted); text-decoration:none; transition:color .2s; }
+.ob-breadcrumb a:hover { color:var(--gold); }
+.ob-breadcrumb .sep { opacity:.35; }
+.ob-breadcrumb .cur { color:var(--ink); font-weight:500; }
+
+/* ── header ──────────────────────────────────────── */
+.ob-header {
+    display:flex; flex-wrap:wrap; align-items:flex-end;
+    justify-content:space-between; gap:1.25rem;
+    padding-bottom:2rem; margin-bottom:2.5rem;
+    border-bottom:1px solid var(--border);
+    animation:fadeDown .5s ease both;
+}
+.ob-header .eyebrow {
+    font-family:'Outfit',sans-serif; font-size:.67rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:3px; color:var(--gold);
+    display:flex; align-items:center; gap:.7rem; margin-bottom:.55rem;
+}
+.ob-header .eyebrow::before { content:''; width:28px; height:1px; background:var(--gold); }
+.ob-header h1 {
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(1.9rem,3.5vw,2.8rem); font-weight:300;
+    color:var(--ink); margin:0; line-height:1;
+}
+.ob-header h1 em { font-style:italic; color:var(--gold); }
+
+/* ── layout ──────────────────────────────────────── */
+.ob-grid {
+    display:grid; grid-template-columns:1fr 360px;
+    gap:2rem; align-items:start;
+}
+
+/* ── panel ───────────────────────────────────────── */
+.ob-panel {
+    background:#fff; border:1px solid var(--border);
+    border-radius:16px; overflow:hidden;
+    box-shadow:var(--shadow-sm);
+    margin-bottom:1.75rem;
+    animation:fadeUp .5s ease both;
+}
+.ob-panel:nth-child(1){animation-delay:.05s}
+.ob-panel:nth-child(2){animation-delay:.12s}
+
+.ob-panel__head {
+    background:var(--brand-dark); color:#fff;
+    padding:.9rem 1.5rem;
+    display:flex; align-items:center; gap:.55rem;
+    font-family:'Cormorant Garamond',serif; font-size:1rem; font-weight:600;
+}
+.ob-panel__head i { color:var(--gold); }
+.ob-panel__body { padding:1.5rem; }
+
+/* ── user card ───────────────────────────────────── */
+.user-confirm-card {
+    display:flex; align-items:center; gap:1.1rem;
+    background:var(--brand-light); border:1px solid var(--border);
+    border-radius:12px; padding:1.1rem 1.25rem;
+}
+.user-confirm-card__avatar {
+    width:52px; height:52px; flex-shrink:0;
+    background:var(--brand-dark); border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Cormorant Garamond',serif;
+    font-size:1.25rem; font-weight:600; color:var(--gold);
+}
+.user-confirm-card__name {
+    font-family:'Cormorant Garamond',serif;
+    font-size:1.1rem; font-weight:600; color:var(--ink); margin-bottom:.15rem;
+}
+.user-confirm-card__email {
+    font-family:'Outfit',sans-serif; font-size:.78rem;
+    font-weight:300; color:var(--text-muted);
+}
+.user-confirm-card__badge {
+    margin-left:auto; font-family:'Outfit',sans-serif;
+    font-size:.62rem; font-weight:600; text-transform:uppercase; letter-spacing:1.2px;
+    background:rgba(26,122,74,.1); color:#1a7a4a;
+    border:1px solid rgba(26,122,74,.2); padding:.3em .8em; border-radius:20px;
+    white-space:nowrap; flex-shrink:0;
+}
+
+/* ── info rows ───────────────────────────────────── */
+.ob-info-row {
+    display:flex; align-items:center; gap:1rem;
+    padding:.7rem 0; border-bottom:1px solid var(--border);
+}
+.ob-info-row:first-child { padding-top:0; }
+.ob-info-row:last-child { border-bottom:none; padding-bottom:0; }
+.ob-info-row__icon {
+    width:34px; height:34px; flex-shrink:0;
+    background:rgba(201,169,110,.1); border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.85rem; color:var(--gold);
+}
+.ob-info-row__label {
+    font-family:'Outfit',sans-serif; font-size:.65rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:1.5px; color:var(--text-muted);
+    margin-bottom:.12rem;
+}
+.ob-info-row__value {
+    font-family:'Outfit',sans-serif; font-size:.9rem; font-weight:500; color:var(--ink);
+}
+
+/* ── cart items table ────────────────────────────── */
+.ob-cart-head {
+    display:grid; grid-template-columns:2.5fr 1fr 1fr 1fr;
+    gap:.75rem; padding:.7rem 1.5rem;
+    background:var(--brand-dark);
+}
+.ob-cart-head span {
+    font-family:'Outfit',sans-serif; font-size:.63rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,.4);
+}
+
+.ob-cart-row {
+    display:grid; grid-template-columns:2.5fr 1fr 1fr 1fr;
+    gap:.75rem; align-items:center;
+    padding:.9rem 1.5rem;
+    border-bottom:1px solid var(--border);
+    animation:rowIn .4s ease both;
+    transition:background .2s;
+}
+.ob-cart-row:last-child { border-bottom:none; }
+.ob-cart-row:hover { background:#faf7f2; }
+
+@keyframes rowIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
+.ob-cart-row:nth-child(1){animation-delay:.08s}
+.ob-cart-row:nth-child(2){animation-delay:.14s}
+.ob-cart-row:nth-child(3){animation-delay:.20s}
+.ob-cart-row:nth-child(4){animation-delay:.26s}
+.ob-cart-row:nth-child(5){animation-delay:.32s}
+
+.ob-cart-row__thumb {
+    width:44px; height:44px; flex-shrink:0;
+    border-radius:8px; overflow:hidden;
+    background:var(--brand-light); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+}
+.ob-cart-row__thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+.ob-cart-row__thumb i   { font-size:1.1rem; color:rgba(201,169,110,.3); }
+
+.ob-cart-row__name {
+    font-family:'Cormorant Garamond',serif;
+    font-size:1rem; font-weight:600; color:var(--ink); line-height:1.2;
+}
+.ob-cart-row__ref {
+    font-family:'Outfit',sans-serif; font-size:.68rem; color:var(--text-muted);
+}
+
+.ob-cart-row__price,
+.ob-cart-row__qty,
+.ob-cart-row__total {
+    font-family:'Outfit',sans-serif; font-size:.88rem; font-weight:500; color:var(--ink);
+}
+.ob-cart-row__total {
+    font-family:'Cormorant Garamond',serif;
+    font-size:1.05rem; font-weight:600; color:var(--gold);
+}
+
+/* ── empty cart warning ──────────────────────────── */
+.ob-empty {
+    text-align:center; padding:3rem 1.5rem;
+    font-family:'Outfit',sans-serif; font-size:.9rem; color:var(--text-muted);
+}
+.ob-empty i { font-size:2.5rem; display:block; margin-bottom:1rem; opacity:.3; }
+
+/* ── sidebar ─────────────────────────────────────── */
+.ob-sidebar {
+    background:var(--brand-dark); border-radius:16px; overflow:hidden;
+    position:sticky; top:90px;
+    animation:fadeLeft .5s ease .15s both;
+}
+.ob-sidebar__head {
+    padding:1.25rem 1.5rem 1rem;
+    border-bottom:1px solid rgba(255,255,255,.07);
+}
+.ob-sidebar__head h3 {
+    font-family:'Cormorant Garamond',serif; font-size:1.2rem;
+    font-weight:400; color:var(--smoke);
+    display:flex; align-items:center; gap:.5rem; margin:0;
+}
+.ob-sidebar__head h3 i { color:var(--gold); font-size:.9em; }
+
+.ob-sidebar__body { padding:1.3rem 1.5rem; }
+
+.sum-row {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:.55rem 0; border-bottom:1px solid rgba(255,255,255,.05);
+    font-family:'Outfit',sans-serif; font-size:.84rem;
+}
+.sum-row:last-of-type { border-bottom:none; }
+.sum-row .lbl { color:rgba(240,237,232,.4); font-weight:300; }
+.sum-row .val { font-family:'Cormorant Garamond',serif; font-size:.95rem; font-weight:600; color:var(--smoke); }
+.sum-row .val.green { font-family:'Outfit',sans-serif; font-size:.8rem; color:#4ade80; font-weight:500; }
+
+.sum-divider { height:1px; background:rgba(201,169,110,.2); margin:.9rem 0; }
+
+.sum-total {
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-bottom:1.5rem;
+}
+.sum-total .lbl { font-family:'Outfit',sans-serif; font-size:.63rem; font-weight:600; text-transform:uppercase; letter-spacing:2px; color:rgba(240,237,232,.35); }
+.sum-total .amount { font-family:'Cormorant Garamond',serif; font-size:2.4rem; font-weight:600; color:var(--gold); line-height:1; }
+.sum-total .amount sup { font-size:.85rem; font-weight:300; color:rgba(201,169,110,.55); font-family:'Outfit',sans-serif; margin-left:.2rem; }
+
+/* auto-generated info notice */
+.ob-auto-note {
+    background:rgba(201,169,110,.08); border:1px solid rgba(201,169,110,.2);
+    border-radius:9px; padding:.75rem 1rem; margin-bottom:1.25rem;
+    font-family:'Outfit',sans-serif; font-size:.73rem; font-weight:300;
+    color:rgba(240,237,232,.45);
+    display:flex; align-items:flex-start; gap:.5rem;
+}
+.ob-auto-note i { color:var(--gold); font-size:.85rem; flex-shrink:0; margin-top:1px; }
+
+/* submit */
+.btn-place-order {
+    width:100%; font-family:'Outfit',sans-serif; font-size:.76rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:2px; color:var(--ink);
+    background:var(--gold); border:none; border-radius:10px; padding:1.05rem;
+    display:flex; align-items:center; justify-content:center; gap:.6rem;
+    cursor:pointer; position:relative; overflow:hidden; transition:color .3s;
+    margin-bottom:.7rem;
+}
+.btn-place-order::before { content:''; position:absolute; inset:0; background:#fff; transform:translateY(101%); transition:transform .32s cubic-bezier(.4,0,.2,1); }
+.btn-place-order:hover { color:var(--ink); }
+.btn-place-order:hover::before { transform:translateY(0); }
+.btn-place-order > * { position:relative; z-index:1; }
+.btn-place-order i { transition:transform .3s; }
+.btn-place-order:hover i { transform:translateX(4px); }
+.btn-place-order:disabled { opacity:.5; cursor:not-allowed; }
+.btn-place-order:disabled::before { display:none; }
+
+.btn-back-cart {
+    width:100%; font-family:'Outfit',sans-serif; font-size:.73rem; font-weight:400;
+    text-transform:uppercase; letter-spacing:1.8px;
+    color:rgba(240,237,232,.3); background:transparent; border:none; padding:.55rem;
+    display:flex; align-items:center; justify-content:center; gap:.5rem;
+    text-decoration:none; transition:color .25s; cursor:pointer;
+}
+.btn-back-cart:hover { color:var(--gold); }
+.btn-back-cart i { transition:transform .25s; }
+.btn-back-cart:hover i { transform:translateX(-4px); }
+
+.ob-trust {
+    display:flex; justify-content:space-around; padding:1rem 1.5rem 1.2rem;
+    border-top:1px solid rgba(255,255,255,.06);
+}
+.trust-item { display:flex; flex-direction:column; align-items:center; gap:.3rem; font-family:'Outfit',sans-serif; font-size:.58rem; font-weight:500; text-transform:uppercase; letter-spacing:1.2px; color:rgba(240,237,232,.2); }
+.trust-item i { font-size:.9rem; color:rgba(201,169,110,.3); }
+
+/* ── animations ──────────────────────────────────── */
+@keyframes fadeDown { from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeUp   { from{opacity:0;transform:translateY(20px)}  to{opacity:1;transform:translateY(0)} }
+@keyframes fadeLeft { from{opacity:0;transform:translateX(24px)}  to{opacity:1;transform:translateX(0)} }
+
+/* ── responsive ──────────────────────────────────── */
+@media (max-width:960px) {
+    .ob-grid { grid-template-columns:1fr; }
+    .ob-sidebar { position:static; }
+}
+@media (max-width:640px) {
+    .ob-cart-head { display:none; }
+    .ob-cart-row  { grid-template-columns:1fr 1fr; }
+    .ob-cart-row__name { grid-column:1/-1; }
+    .ob-cart-row__total { grid-column:1/-1; border-top:1px solid var(--border); padding-top:.4rem; }
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<div class="ob-breadcrumb">
+    <a href="/"><i class="bi bi-house-door"></i></a>
+    <span class="sep">/</span>
+    <a href="/cart/">Panier</a>
+    <span class="sep">/</span>
+    <span class="cur">Confirmation de commande</span>
+</div>
+
+<!-- Header -->
+<div class="ob-header">
+    <div>
+        <div class="eyebrow">Dernière étape</div>
+        <h1>Confirmer la <em>commande</em></h1>
+    </div>
+    <a href="/cart/" class="btn btn-outline-custom btn-sm">
+        <i class="bi bi-arrow-left"></i> Retour au panier
+    </a>
+</div>
+
+
+
+
+<div class="ob-grid">
+
+    <!-- ══ LEFT ═══════════════════════════════════════ -->
+    <div>
+
+        <!-- ── Client ──────────────────────────────── -->
+        <div class="ob-panel">
+            <div class="ob-panel__head">
+                <i class="bi bi-person-fill"></i> Client
+            </div>
+            <div class="ob-panel__body">
+
+                <div class="user-confirm-card">
+                    <div class="user-confirm-card__avatar">
+                        {{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}
+                    </div>
+                    <div>
+                        <div class="user-confirm-card__name">
+                            {{ request.user.first_name }} {{ request.user.last_name }}
+                        </div>
+                        <div class="user-confirm-card__email">{{ request.user.email }}</div>
+                    </div>
+                    <span class="user-confirm-card__badge">
+                        <i class="bi bi-shield-fill-check me-1"></i>Connecté
+                    </span>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ── Récapitulatif panier ─────────────────── -->
+        <div class="ob-panel">
+            <div class="ob-panel__head">
+                <i class="bi bi-bag"></i> Articles commandés
+            </div>
+
+            {% if cart.cartitem_set.all %}
+
+            <div class="ob-cart-head">
+                <span>Produit</span>
+                <span>Prix unit.</span>
+                <span>Qté</span>
+                <span>Sous-total</span>
+            </div>
+
+            {% for item in cart.cartitem_set.all %}
+            <div class="ob-cart-row">
+                <div style="display:flex;align-items:center;gap:.75rem;">
+                    <div class="ob-cart-row__thumb">
+                        {% if item.product.image %}
+                            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}"
+                                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                            <i class="bi bi-bag" style="display:none;"></i>
+                        {% else %}
+                            <i class="bi bi-bag"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <div class="ob-cart-row__name">{{ item.product.name }}</div>
+                        <div class="ob-cart-row__ref">Réf. #{{ item.product.id|stringformat:"04d" }}</div>
+                    </div>
+                </div>
+                <div class="ob-cart-row__price">{{ item.unit_price }} DH</div>
+                <div class="ob-cart-row__qty">× {{ item.quantity }}</div>
+                <div class="ob-cart-row__total">{{ item.subtotal }} DH</div>
+            </div>
+            {% endfor %}
+
+            {% else %}
+            <div class="ob-empty">
+                <i class="bi bi-bag-x"></i>
+                Votre panier est vide.
+                <a href="/product/" class="btn btn-accent btn-sm mt-3">
+                    <i class="bi bi-grid"></i> Voir les produits
+                </a>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- ── Infos auto-générées ───────────────────── -->
+        <div class="ob-panel">
+            <div class="ob-panel__head">
+                <i class="bi bi-info-circle"></i> Détails de la commande
+            </div>
+            <div class="ob-panel__body">
+
+                <div class="ob-info-row">
+                    <div class="ob-info-row__icon"><i class="bi bi-hash"></i></div>
+                    <div>
+                        <div class="ob-info-row__label">Numéro de commande</div>
+                        <div class="ob-info-row__value" style="color:var(--text-muted);font-style:italic;font-size:.82rem;">
+                            Généré automatiquement (UUID 10 caractères)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ob-info-row">
+                    <div class="ob-info-row__icon"><i class="bi bi-calendar3"></i></div>
+                    <div>
+                        <div class="ob-info-row__label">Date</div>
+                        <div class="ob-info-row__value" style="color:var(--text-muted);font-style:italic;font-size:.82rem;">
+                            Enregistrée automatiquement à la validation
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ob-info-row">
+                    <div class="ob-info-row__icon"><i class="bi bi-tag"></i></div>
+                    <div>
+                        <div class="ob-info-row__label">Statut initial</div>
+                        <div class="ob-info-row__value">
+                            <span style="background:rgba(183,110,0,.1);color:#b76e00;border:1px solid rgba(183,110,0,.2);font-family:'Outfit',sans-serif;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:.28em .75em;border-radius:20px;">
+                                En attente
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ob-info-row">
+                    <div class="ob-info-row__icon"><i class="bi bi-cash-stack"></i></div>
+                    <div>
+                        <div class="ob-info-row__label">Montant total</div>
+                        <div class="ob-info-row__value" style="font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:600;color:var(--gold);">
+                            {{ total_price }} <span style="font-size:.8rem;font-weight:300;color:var(--text-muted);">DH</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ══ SIDEBAR ════════════════════════════════════ -->
+    <div class="ob-sidebar">
+
+        <div class="ob-sidebar__head">
+            <h3><i class="bi bi-bag-heart"></i> Récapitulatif</h3>
+        </div>
+
+        <div class="ob-sidebar__body">
+
+            <div class="sum-row">
+                <span class="lbl">Client</span>
+                <span class="val">{{ request.user.first_name }} {{ request.user.last_name }}</span>
+            </div>
+            <div class="sum-row">
+                <span class="lbl">Articles</span>
+                <span class="val">
+                    {% with count=cart.cartitem_set.count %}
+                        {{ count }} article{{ count|pluralize }}
+                    {% endwith %}
+                </span>
+            </div>
+            <div class="sum-row">
+                <span class="lbl">Livraison</span>
+                <span class="val green"><i class="bi bi-check-circle me-1"></i>Gratuite</span>
+            </div>
+            <div class="sum-row">
+                <span class="lbl">Statut</span>
+                <span class="val" style="font-family:'Outfit',sans-serif;font-size:.78rem;color:#b76e00;">En attente</span>
+            </div>
+
+            <div class="sum-divider"></div>
+
+            <div class="sum-total">
+                <span class="lbl">Total à payer</span>
+                <span class="amount">{{ total_price }}<sup>DH</sup></span>
+            </div>
+
+            <div class="ob-auto-note">
+                <i class="bi bi-magic"></i>
+                Le numéro, la date et le montant sont générés automatiquement par le serveur.
+            </div>
+
+            {% if cart.cartitem_set.all %}
+                <form method="post" id="orderForm" action="{% url 'valider_order' order.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-place-order">
+                        <i class="bi bi-check-lg"></i>
+                        <span>Passer la commande</span>
+                    </button>
+                </form>
+            {% else %}
+            <button type="submit" class="btn-place-order" disabled>
+                <i class="bi bi-bag-x"></i>
+                <span>Panier vide</span>
+            </button>
+            {% endif %}
+
+            <a href="/cart/" class="btn-back-cart">
+                <i class="bi bi-arrow-left"></i> Modifier le panier
+            </a>
+
+        </div>
+
+        <div class="ob-trust">
+            <div class="trust-item"><i class="bi bi-shield-lock-fill"></i>Sécurisé</div>
+            <div class="trust-item"><i class="bi bi-truck"></i>Offerte</div>
+            <div class="trust-item"><i class="bi bi-arrow-counterclockwise"></i>30j retours</div>
+        </div>
+
+    </div>
+
+</div>
+
+
+{% endblock %}
