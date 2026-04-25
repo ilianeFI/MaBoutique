@@ -84,6 +84,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'DjangoProject.wsgi.application'
 
+STRIPE_SECRET_KEY=os.getenv('SECRET_KEY')
+STRIPE_PUBLIC_KEY=os.getenv('PUBLIC_KEY')
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases

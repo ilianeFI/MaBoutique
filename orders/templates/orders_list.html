@@ -1,0 +1,435 @@
+{% extends 'base.html' %}
+{% block title %}Mes commandes — MaBoutique{% endblock %}
+{% block nav_orders %}active{% endblock %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --gold:#c9a96e; --ink:#0a0a0a; --smoke:#f0ede8; }
+
+/* ── header ──────────────────────────────────────── */
+.orders-header {
+    display:flex; flex-wrap:wrap; align-items:flex-end;
+    justify-content:space-between; gap:1.25rem;
+    padding-bottom:2rem; margin-bottom:2.5rem;
+    border-bottom:1px solid var(--border);
+    animation:fadeDown .5s ease both;
+}
+.orders-header .eyebrow {
+    font-family:'Outfit',sans-serif; font-size:.67rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:3px; color:var(--gold);
+    display:flex; align-items:center; gap:.7rem; margin-bottom:.55rem;
+}
+.orders-header .eyebrow::before { content:''; width:28px; height:1px; background:var(--gold); }
+.orders-header h1 {
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(1.9rem,3.5vw,2.8rem); font-weight:300;
+    color:var(--ink); margin:0; line-height:1;
+}
+.orders-header h1 em { font-style:italic; color:var(--gold); }
+
+/* ── stats row ───────────────────────────────────── */
+.orders-stats {
+    display:grid; grid-template-columns:repeat(4, 1fr);
+    gap:1rem; margin-bottom:2rem;
+}
+.ostat {
+    background:#fff; border:1px solid var(--border);
+    border-radius:14px; padding:1.1rem 1.3rem;
+    box-shadow:var(--shadow-sm); position:relative; overflow:hidden;
+    transition:var(--transition);
+    animation:fadeUp .5s ease both;
+}
+.ostat:hover { box-shadow:var(--shadow-md); transform:translateY(-3px); }
+.ostat::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:var(--gold); }
+.ostat:nth-child(1){animation-delay:.05s} .ostat:nth-child(2){animation-delay:.10s}
+.ostat:nth-child(3){animation-delay:.15s} .ostat:nth-child(4){animation-delay:.20s}
+
+.ostat__num {
+    font-family:'Cormorant Garamond',serif;
+    font-size:1.9rem; font-weight:600; color:var(--ink); line-height:1; margin-bottom:.2rem;
+}
+.ostat__num span { color:var(--gold); }
+.ostat__label {
+    font-family:'Outfit',sans-serif; font-size:.68rem; font-weight:500;
+    text-transform:uppercase; letter-spacing:1.5px; color:var(--text-muted);
+}
+
+/* ── filter bar ──────────────────────────────────── */
+.orders-filterbar {
+    display:flex; flex-wrap:wrap; align-items:center; gap:.65rem;
+    padding:1rem 1.4rem;
+    background:#fff; border:1px solid var(--border);
+    border-radius:12px 12px 0 0; border-bottom:none;
+    animation:fadeUp .5s ease .1s both;
+}
+
+.filter-pill {
+    font-family:'Outfit',sans-serif; font-size:.72rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:1.2px;
+    padding:.35em .9em; border-radius:20px; cursor:pointer;
+    border:1.5px solid var(--border);
+    background:#fff; color:var(--text-muted);
+    transition:var(--transition);
+}
+.filter-pill:hover  { border-color:var(--gold); color:var(--gold); }
+.filter-pill.active { background:var(--ink); color:var(--gold); border-color:var(--ink); }
+
+.filter-search {
+    display:flex; align-items:center;
+    background:var(--brand-light); border:1.5px solid var(--border);
+    border-radius:9px; overflow:hidden;
+    transition:border-color .25s; margin-left:auto;
+}
+.filter-search:focus-within { border-color:var(--gold); }
+.filter-search i { padding:0 .7rem; color:var(--text-muted); font-size:.85rem; }
+.filter-search input {
+    border:none; outline:none; background:transparent;
+    font-family:'Outfit',sans-serif; font-size:.85rem; font-weight:300; color:var(--ink);
+    padding:.5rem .5rem .5rem 0; width:190px;
+}
+.filter-search input::placeholder { color:#bbb; }
+
+/* ── orders table wrapper ────────────────────────── */
+.orders-table-wrap {
+    background:#fff; border:1px solid var(--border);
+    border-radius:0 0 16px 16px; overflow:hidden;
+    box-shadow:var(--shadow-sm);
+    animation:fadeUp .5s ease .15s both;
+}
+
+/* thead */
+.ot-head {
+    display:grid; grid-template-columns:.8fr 1.4fr 1fr 1fr 1.2fr .7fr;
+    gap:1rem; padding:.8rem 1.5rem;
+    background:var(--brand-dark);
+}
+.ot-head span {
+    font-family:'Outfit',sans-serif; font-size:.65rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,.4);
+}
+
+/* order row */
+.order-row {
+    display:grid; grid-template-columns:.8fr 1.4fr 1fr 1fr 1.2fr .7fr;
+    gap:1rem; align-items:center;
+    padding:1rem 1.5rem;
+    border-bottom:1px solid var(--border);
+    transition:background .2s, transform .2s;
+    cursor:pointer;
+    animation:rowIn .45s ease both;
+    text-decoration:none; color:inherit;
+}
+.order-row:last-child { border-bottom:none; }
+.order-row:hover { background:#faf7f2; transform:translateX(3px); }
+
+@keyframes rowIn { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
+.order-row:nth-child(1){animation-delay:.08s}
+.order-row:nth-child(2){animation-delay:.14s}
+.order-row:nth-child(3){animation-delay:.20s}
+.order-row:nth-child(4){animation-delay:.26s}
+.order-row:nth-child(5){animation-delay:.32s}
+.order-row:nth-child(6){animation-delay:.38s}
+
+/* cells */
+.oc-number {
+    font-family:'Cormorant Garamond',serif; font-size:1rem; font-weight:600;
+    color:var(--gold);
+}
+.oc-number small {
+    display:block; font-family:'Outfit',sans-serif; font-size:.65rem;
+    font-weight:400; color:var(--text-muted); margin-top:.1rem;
+}
+
+.oc-client {
+    font-family:'Outfit',sans-serif; font-size:.87rem; font-weight:500; color:var(--ink);
+}
+.oc-client small {
+    display:block; font-size:.72rem; font-weight:300; color:var(--text-muted);
+}
+
+.oc-date {
+    font-family:'Outfit',sans-serif; font-size:.82rem; font-weight:300; color:var(--text-muted);
+}
+
+.oc-prix {
+    font-family:'Cormorant Garamond',serif; font-size:1.05rem; font-weight:600; color:var(--ink);
+}
+.oc-prix span { font-family:'Outfit',sans-serif; font-size:.7rem; font-weight:300; color:var(--text-muted); margin-left:.2rem; }
+
+/* status pill */
+.oc-status { }
+.status-pill {
+    display:inline-flex; align-items:center; gap:.4rem;
+    font-family:'Outfit',sans-serif; font-size:.63rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:1.2px;
+    padding:.28em .8em; border-radius:20px; white-space:nowrap;
+}
+.status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+
+.sp--pending    { background:rgba(183,110,0,.1);  color:#b76e00; border:1px solid rgba(183,110,0,.2); }
+.sp--confirmed  { background:rgba(21,101,192,.1); color:#1565c0; border:1px solid rgba(21,101,192,.2); }
+.sp--processing { background:rgba(103,58,183,.1); color:#6200ea; border:1px solid rgba(103,58,183,.2); }
+.sp--shipped    { background:rgba(201,169,110,.12);color:#8a6200; border:1px solid rgba(201,169,110,.25); }
+.sp--delivered  { background:rgba(26,122,74,.1);  color:#1a7a4a; border:1px solid rgba(26,122,74,.2); }
+.sp--cancelled  { background:rgba(185,28,28,.1);  color:#b91c1c; border:1px solid rgba(185,28,28,.2); }
+.sp--refunded   { background:#f0f0f0;              color:#555;    border:1px solid #ddd; }
+
+.sp--pending .status-dot    { background:#b76e00; animation:blink 1.8s infinite; }
+.sp--processing .status-dot { background:#6200ea; animation:blink 1.8s infinite; }
+.sp--confirmed .status-dot  { background:#1565c0; }
+.sp--shipped .status-dot    { background:#8a6200; }
+.sp--delivered .status-dot  { background:#1a7a4a; }
+.sp--cancelled .status-dot  { background:#b91c1c; }
+.sp--refunded .status-dot   { background:#555; }
+@keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.4)} }
+
+/* action arrow */
+.oc-action {
+    display:flex; align-items:center; justify-content:flex-end;
+}
+.oc-arrow {
+    width:30px; height:30px;
+    background:var(--brand-light); border:1px solid var(--border);
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:.8rem; color:var(--text-muted);
+    transition:var(--transition);
+}
+.order-row:hover .oc-arrow {
+    background:var(--ink); border-color:var(--ink); color:var(--gold);
+    transform:translateX(3px);
+}
+
+/* ── empty state ─────────────────────────────────── */
+.orders-empty {
+    text-align:center; padding:5rem 2rem;
+    background:#fff; border:1px solid var(--border);
+    border-radius:16px;
+    animation:fadeIn .5s ease both;
+}
+.orders-empty i { font-size:3rem; color:var(--border); display:block; margin-bottom:1.2rem; }
+.orders-empty h4 { font-family:'Cormorant Garamond',serif; font-size:1.6rem; font-weight:300; margin-bottom:.4rem; }
+.orders-empty p  { font-size:.88rem; color:var(--text-muted); margin-bottom:1.75rem; }
+
+/* ── no results ──────────────────────────────────── */
+#noResults {
+    display:none; padding:3rem; text-align:center;
+    font-family:'Outfit',sans-serif; font-size:.88rem; color:var(--text-muted);
+}
+
+/* ── animations ──────────────────────────────────── */
+@keyframes fadeDown { from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeUp   { from{opacity:0;transform:translateY(20px)}  to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+
+/* ── responsive ──────────────────────────────────── */
+@media (max-width:960px) {
+    .orders-stats { grid-template-columns:1fr 1fr; }
+    .ot-head { display:none; }
+    .order-row {
+        grid-template-columns:1fr 1fr;
+        grid-template-rows:auto auto auto;
+        gap:.5rem; border-radius:12px;
+        border:1px solid var(--border) !important;
+        margin:.5rem 1rem; padding:1rem;
+    }
+    .oc-number { grid-column:1/-1; }
+    .oc-action { grid-column:1/-1; justify-content:flex-start; }
+}
+@media (max-width:576px) {
+    .orders-stats { grid-template-columns:1fr 1fr; }
+    .orders-header { flex-direction:column; align-items:flex-start; }
+    .filter-search { width:100%; }
+    .filter-search input { width:100%; }
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<!-- ── Header ────────────────────────────────────── -->
+<div class="orders-header">
+    <div>
+        <div class="eyebrow">Mon espace</div>
+        <h1>Mes <em>commandes</em></h1>
+    </div>
+    <a href="{% url 'product_list' %}" class="btn btn-accent">
+        <i class="bi bi-bag-plus"></i> Continuer mes achats
+    </a>
+</div>
+
+
+{% if orders %}
+
+<!-- ── Stats ─────────────────────────────────────── -->
+<div class="orders-stats">
+    <div class="ostat">
+        <div class="ostat__num">{{ orders|length }}<span></span></div>
+        <div class="ostat__label">Total commandes</div>
+    </div>
+    <div class="ostat">
+        <div class="ostat__num">
+            {{ orders_pending|length }}<span style="font-size:1rem;"> ×</span>
+        </div>
+        <div class="ostat__label">En attente</div>
+    </div>
+    <div class="ostat">
+        <div class="ostat__num">
+            {{ orders_delivered|length }}
+        </div>
+        <div class="ostat__label">Livrées</div>
+    </div>
+    <div class="ostat">
+        <div class="ostat__num" id="totalSpend">—</div>
+        <div class="ostat__label">Total dépensé (DH)</div>
+    </div>
+</div>
+
+<!-- ── Filter bar ─────────────────────────────────── -->
+<div class="orders-filterbar">
+    <button class="filter-pill active" data-filter="all">Toutes</button>
+    <button class="filter-pill" data-filter="pending">En attente</button>
+    <button class="filter-pill" data-filter="confirmed">Confirmées</button>
+    <button class="filter-pill" data-filter="delivered">Livrées</button>
+    <button class="filter-pill" data-filter="cancelled">Annulées</button>
+
+    
+</div>
+
+<!-- ── Table ──────────────────────────────────────── -->
+<div class="orders-table-wrap">
+
+    <div class="ot-head">
+        <span>N° commande</span>
+        <span>Client</span>
+        <span>Date</span>
+        <span>Montant</span>
+        <span>Statut</span>
+        <span></span>
+    </div>
+
+    <div id="ordersList">
+        {% for order in orders %}
+        <a href="{% url 'order_page' order.number %}"
+           class="order-row"
+           data-status="{{ order.status }}"
+           data-search="{{ order.number }} {{ order.user.first_name }} {{ order.user.last_name }} {{ order.status }}">
+
+            <!-- N° -->
+            <div class="oc-number">
+                #{{ order.number }}
+                <small>{{ order.date|date:"d/m/Y" }}</small>
+            </div>
+
+            <!-- Client -->
+            <div class="oc-client">
+                {{ order.user.first_name }} {{ order.user.last_name }}
+                <small>{{ order.user.email }}</small>
+            </div>
+
+            <!-- Date -->
+            <div class="oc-date">
+                {{ order.date|date:"d M Y" }}<br>
+                <span style="font-size:.7rem;">{{ order.date|date:"H:i" }}</span>
+            </div>
+
+            <!-- Prix -->
+            <div class="oc-prix">{{ order.prix }}<span>DH</span></div>
+
+            <!-- Statut -->
+            <div class="oc-status">
+                <span class="status-pill sp--{{ order.status }}">
+                    <span class="status-dot"></span>
+                    {{ order.get_status_display }}
+                </span>
+            </div>
+
+            <!-- Arrow -->
+            <div class="oc-action">
+                <div class="oc-arrow"><i class="bi bi-arrow-right"></i></div>
+            </div>
+
+        </a>
+        {% endfor %}
+
+        <div id="noResults">
+            <i class="bi bi-search" style="font-size:1.5rem;display:block;margin-bottom:.5rem;opacity:.3;"></i>
+            Aucune commande ne correspond.
+        </div>
+    </div>
+
+</div>
+
+{% else %}
+
+<!-- ── Empty ──────────────────────────────────────── -->
+<div class="orders-empty">
+    <i class="bi bi-receipt"></i>
+    <h4>Aucune commande pour le moment</h4>
+    <p>Vous n'avez pas encore passé de commande.</p>
+    <a href="/product/" class="btn btn-accent">
+        <i class="bi bi-grid-fill"></i> Découvrir nos produits
+    </a>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+(function () {
+    /* ── Compute total spend ── */
+    const rows = document.querySelectorAll('.order-row');
+    let total = 0;
+    rows.forEach(r => {
+        const prix = parseFloat(r.querySelector('.oc-prix')?.textContent) || 0;
+        total += prix;
+    });
+    const el = document.getElementById('totalSpend');
+    if (el && total > 0) el.textContent = total.toFixed(2);
+
+    /* ── Filter pills ── */
+    const pills = document.querySelectorAll('.filter-pill');
+    pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            pills.forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            const f = pill.dataset.filter;
+            let visible = 0;
+            rows.forEach(row => {
+                const match = f === 'all' || row.dataset.status === f;
+                row.style.display = match ? '' : 'none';
+                if (match) visible++;
+            });
+            showNoResults(visible === 0);
+        });
+    });
+
+    /* ── Search ── */
+    const searchInput = document.getElementById('orderSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            const q = searchInput.value.toLowerCase().trim();
+            // reset pills
+            pills.forEach(p => p.classList.remove('active'));
+            document.querySelector('[data-filter="all"]')?.classList.add('active');
+            let visible = 0;
+            rows.forEach(row => {
+                const match = !q || row.dataset.search.toLowerCase().includes(q);
+                row.style.display = match ? '' : 'none';
+                if (match) visible++;
+            });
+            showNoResults(visible === 0 && q.length > 0);
+        });
+    }
+
+    function showNoResults(show) {
+        const nr = document.getElementById('noResults');
+        if (nr) nr.style.display = show ? 'block' : 'none';
+    }
+})();
+</script>
+{% endblock %}

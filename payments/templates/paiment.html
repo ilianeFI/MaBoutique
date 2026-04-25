@@ -1,0 +1,471 @@
+{% extends 'base.html' %}
+{% block title %}Paiement — Commande #{{ order.number }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --gold:#c9a96e; --ink:#0a0a0a; --smoke:#f0ede8; }
+
+/* ── breadcrumb ──────────────────────────────────── */
+.pay-breadcrumb {
+    display:flex; align-items:center; gap:.5rem;
+    font-family:'Outfit',sans-serif; font-size:.72rem; color:var(--text-muted);
+    margin-bottom:2rem; animation:fadeDown .4s ease both;
+}
+.pay-breadcrumb a { color:var(--text-muted); text-decoration:none; transition:color .2s; }
+.pay-breadcrumb a:hover { color:var(--gold); }
+.pay-breadcrumb .sep { opacity:.35; }
+.pay-breadcrumb .cur { color:var(--ink); font-weight:500; }
+
+/* ── header ──────────────────────────────────────── */
+.pay-header {
+    display:flex; flex-wrap:wrap; align-items:flex-end;
+    justify-content:space-between; gap:1.25rem;
+    padding-bottom:2rem; margin-bottom:2.5rem;
+    border-bottom:1px solid var(--border);
+    animation:fadeDown .5s ease both;
+}
+.pay-header .eyebrow {
+    font-family:'Outfit',sans-serif; font-size:.67rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:3px; color:var(--gold);
+    display:flex; align-items:center; gap:.7rem; margin-bottom:.55rem;
+}
+.pay-header .eyebrow::before { content:''; width:28px; height:1px; background:var(--gold); }
+.pay-header h1 {
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(1.9rem,3.5vw,2.8rem); font-weight:300;
+    color:var(--ink); margin:0; line-height:1;
+}
+.pay-header h1 em { font-style:italic; color:var(--gold); }
+
+/* ── steps indicator ─────────────────────────────── */
+.pay-steps {
+    display:flex; align-items:center; gap:0;
+    margin-bottom:2.5rem;
+    animation:fadeDown .5s ease .1s both;
+}
+.pay-step {
+    display:flex; align-items:center; gap:.6rem;
+    font-family:'Outfit',sans-serif; font-size:.72rem; font-weight:500;
+    color:var(--text-muted);
+}
+.pay-step__dot {
+    width:28px; height:28px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.7rem; font-weight:700; flex-shrink:0;
+}
+.pay-step--done .pay-step__dot  { background:var(--gold); color:var(--ink); }
+.pay-step--done                 { color:var(--gold); }
+.pay-step--active .pay-step__dot{ background:var(--ink); color:var(--gold); border:2px solid var(--gold); }
+.pay-step--active               { color:var(--ink); font-weight:600; }
+.pay-step--next .pay-step__dot  { background:#fff; color:var(--text-muted); border:1.5px solid var(--border); }
+
+.pay-step-line { flex:1; height:1px; background:var(--border); margin:0 .75rem; min-width:30px; }
+.pay-step-line--done { background:var(--gold); opacity:.4; }
+
+/* ── layout ──────────────────────────────────────── */
+.pay-grid {
+    display:grid; grid-template-columns:1fr 340px;
+    gap:2rem; align-items:start;
+}
+
+/* ── payment methods ─────────────────────────────── */
+.pay-methods { display:flex; flex-direction:column; gap:1rem; }
+
+.pay-method {
+    background:#fff; border:2px solid var(--border);
+    border-radius:16px; padding:1.4rem 1.5rem;
+    cursor:pointer; transition:all .28s ease;
+    display:flex; align-items:center; gap:1.1rem;
+    position:relative; overflow:hidden;
+    animation:fadeUp .5s ease both;
+}
+.pay-method:nth-child(1){animation-delay:.06s}
+.pay-method:nth-child(2){animation-delay:.12s}
+.pay-method:nth-child(3){animation-delay:.18s}
+.pay-method:nth-child(4){animation-delay:.24s}
+
+.pay-method::before {
+    content:''; position:absolute; left:0; top:0; bottom:0;
+    width:3px; background:var(--gold);
+    transform:scaleY(0); transform-origin:center;
+    transition:transform .28s ease;
+}
+
+.pay-method:hover { border-color:var(--gold); box-shadow:0 4px 20px rgba(201,169,110,.15); }
+.pay-method:hover::before { transform:scaleY(1); }
+.pay-method.selected { border-color:var(--gold); box-shadow:0 4px 20px rgba(201,169,110,.15); }
+.pay-method.selected::before { transform:scaleY(1); }
+
+/* radio hidden */
+.pay-method input[type="radio"] { display:none; }
+
+.pay-method__icon {
+    width:52px; height:52px; flex-shrink:0;
+    border-radius:12px; background:var(--brand-light);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.5rem; transition:all .28s ease;
+    border:1px solid var(--border);
+}
+.pay-method:hover .pay-method__icon,
+.pay-method.selected .pay-method__icon {
+    background:var(--ink); border-color:var(--ink); color:var(--gold);
+}
+
+.pay-method__info { flex:1; }
+.pay-method__name {
+    font-family:'Cormorant Garamond',serif;
+    font-size:1.1rem; font-weight:600; color:var(--ink); margin-bottom:.2rem;
+}
+.pay-method__desc {
+    font-family:'Outfit',sans-serif; font-size:.78rem;
+    font-weight:300; color:var(--text-muted); line-height:1.5;
+}
+
+.pay-method__check {
+    width:22px; height:22px; border-radius:50%;
+    border:2px solid var(--border); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.7rem; color:transparent;
+    transition:all .25s ease;
+}
+.pay-method.selected .pay-method__check {
+    background:var(--gold); border-color:var(--gold); color:var(--ink);
+}
+
+/* badge on card */
+.pay-method__badge {
+    position:absolute; top:.85rem; right:1rem;
+    font-family:'Outfit',sans-serif; font-size:.58rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:1.2px;
+    background:rgba(26,122,74,.1); color:#1a7a4a;
+    border:1px solid rgba(26,122,74,.2); padding:.2em .6em; border-radius:20px;
+}
+
+/* ── order summary sidebar ───────────────────────── */
+.pay-summary {
+    background:var(--brand-dark); border-radius:16px; overflow:hidden;
+    position:sticky; top:90px;
+    animation:fadeLeft .5s ease .15s both;
+}
+.pay-summary__head {
+    padding:1.25rem 1.5rem 1rem;
+    border-bottom:1px solid rgba(255,255,255,.07);
+}
+.pay-summary__head h3 {
+    font-family:'Cormorant Garamond',serif; font-size:1.2rem;
+    font-weight:400; color:var(--smoke);
+    display:flex; align-items:center; gap:.5rem; margin:0;
+}
+.pay-summary__head h3 i { color:var(--gold); font-size:.9em; }
+
+.pay-summary__body { padding:1.3rem 1.5rem; }
+
+.sum-row {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:.55rem 0; border-bottom:1px solid rgba(255,255,255,.05);
+    font-family:'Outfit',sans-serif; font-size:.84rem;
+}
+.sum-row:last-of-type { border-bottom:none; }
+.sum-row .lbl { color:rgba(240,237,232,.4); font-weight:300; }
+.sum-row .val { font-family:'Cormorant Garamond',serif; font-size:.95rem; font-weight:600; color:var(--smoke); }
+.sum-row .val.green { font-family:'Outfit',sans-serif; font-size:.8rem; color:#4ade80; font-weight:500; }
+
+.sum-divider { height:1px; background:rgba(201,169,110,.2); margin:.9rem 0; }
+
+.sum-total {
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-bottom:1.5rem;
+}
+.sum-total .lbl { font-family:'Outfit',sans-serif; font-size:.63rem; font-weight:600; text-transform:uppercase; letter-spacing:2px; color:rgba(240,237,232,.35); }
+.sum-total .amount { font-family:'Cormorant Garamond',serif; font-size:2.4rem; font-weight:600; color:var(--gold); line-height:1; }
+.sum-total .amount sup { font-size:.85rem; font-weight:300; color:rgba(201,169,110,.55); font-family:'Outfit',sans-serif; margin-left:.2rem; }
+
+/* order meta */
+.pay-summary__meta {
+    padding:.75rem 1.5rem 1rem;
+    border-top:1px solid rgba(255,255,255,.06);
+}
+.pay-meta-row {
+    display:flex; justify-content:space-between;
+    font-family:'Outfit',sans-serif; font-size:.75rem;
+    padding:.3rem 0; color:rgba(240,237,232,.3);
+}
+.pay-meta-row span:last-child { color:rgba(240,237,232,.6); font-weight:500; }
+
+/* submit */
+.btn-pay {
+    width:100%; font-family:'Outfit',sans-serif; font-size:.76rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:2px; color:var(--ink);
+    background:var(--gold); border:none; border-radius:10px; padding:1.05rem;
+    display:flex; align-items:center; justify-content:center; gap:.6rem;
+    cursor:pointer; position:relative; overflow:hidden; transition:color .3s;
+    margin-bottom:.7rem;
+}
+.btn-pay::before { content:''; position:absolute; inset:0; background:#fff; transform:translateY(101%); transition:transform .32s cubic-bezier(.4,0,.2,1); }
+.btn-pay:hover { color:var(--ink); }
+.btn-pay:hover::before { transform:translateY(0); }
+.btn-pay > * { position:relative; z-index:1; }
+.btn-pay i { transition:transform .3s; }
+.btn-pay:hover i { transform:translateX(4px); }
+.btn-pay:disabled { opacity:.4; cursor:not-allowed; }
+.btn-pay:disabled::before { display:none; }
+
+.btn-pay-back {
+    width:100%; font-family:'Outfit',sans-serif; font-size:.73rem; font-weight:400;
+    text-transform:uppercase; letter-spacing:1.8px;
+    color:rgba(240,237,232,.3); background:transparent; border:none; padding:.55rem;
+    display:flex; align-items:center; justify-content:center; gap:.5rem;
+    text-decoration:none; transition:color .25s; cursor:pointer;
+}
+.btn-pay-back:hover { color:var(--gold); }
+.btn-pay-back i { transition:transform .25s; }
+.btn-pay-back:hover i { transform:translateX(-4px); }
+
+/* trust */
+.pay-trust {
+    display:flex; justify-content:space-around; padding:1rem 1.5rem 1.2rem;
+    border-top:1px solid rgba(255,255,255,.06);
+}
+.trust-item { display:flex; flex-direction:column; align-items:center; gap:.3rem; font-family:'Outfit',sans-serif; font-size:.58rem; font-weight:500; text-transform:uppercase; letter-spacing:1.2px; color:rgba(240,237,232,.2); }
+.trust-item i { font-size:.9rem; color:rgba(201,169,110,.3); }
+
+/* selected method display */
+.pay-selected-display {
+    margin-top:1rem; padding:.75rem 1rem;
+    background:rgba(201,169,110,.08); border:1px solid rgba(201,169,110,.2);
+    border-radius:9px;
+    font-family:'Outfit',sans-serif; font-size:.75rem; font-weight:400;
+    color:rgba(240,237,232,.45);
+    display:flex; align-items:center; gap:.5rem;
+    min-height:44px;
+}
+.pay-selected-display i { color:var(--gold); font-size:.9rem; }
+#selectedMethodName { color:rgba(240,237,232,.75); font-weight:500; }
+
+/* ── animations ──────────────────────────────────── */
+@keyframes fadeDown { from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeUp   { from{opacity:0;transform:translateY(20px)}  to{opacity:1;transform:translateY(0)} }
+@keyframes fadeLeft { from{opacity:0;transform:translateX(24px)}  to{opacity:1;transform:translateX(0)} }
+
+/* ── responsive ──────────────────────────────────── */
+@media (max-width:960px) {
+    .pay-grid { grid-template-columns:1fr; }
+    .pay-summary { position:static; }
+}
+@media (max-width:576px) {
+    .pay-header { flex-direction:column; align-items:flex-start; }
+    .pay-steps  { display:none; }
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<div class="pay-breadcrumb">
+    <a href="/"><i class="bi bi-house-door"></i></a>
+    <span class="sep">/</span>
+    <a href="{% url 'orders_list' %}">Mes commandes</a>
+    <span class="sep">/</span>
+    <a href="{% url 'order_page' order.id %}">#{{ order.number }}</a>
+    <span class="sep">/</span>
+    <span class="cur">Paiement</span>
+</div>
+
+<!-- Header -->
+<div class="pay-header">
+    <div>
+        <div class="eyebrow">Étape finale</div>
+        <h1>Choisir le <em>paiement</em></h1>
+    </div>
+    <a href="{% url 'order_page' order.id %}" class="btn btn-outline-custom btn-sm">
+        <i class="bi bi-arrow-left"></i> Retour
+    </a>
+</div>
+
+<!-- Steps -->
+<div class="pay-steps">
+    <div class="pay-step pay-step--done">
+        <div class="pay-step__dot"><i class="bi bi-check-lg"></i></div>
+        Panier
+    </div>
+    <div class="pay-step-line pay-step-line--done"></div>
+    <div class="pay-step pay-step--done">
+        <div class="pay-step__dot"><i class="bi bi-check-lg"></i></div>
+        Commande
+    </div>
+    <div class="pay-step-line pay-step-line--done"></div>
+    <div class="pay-step pay-step--active">
+        <div class="pay-step__dot"><i class="bi bi-credit-card"></i></div>
+        Paiement
+    </div>
+    <div class="pay-step-line"></div>
+    <div class="pay-step pay-step--next">
+        <div class="pay-step__dot"><i class="bi bi-bag-check"></i></div>
+        Confirmation
+    </div>
+</div>
+
+
+<form method="post" id="payForm" action="{% url 'paiment_selection' order.id %}">
+{% csrf_token %}
+
+<div class="pay-grid">
+
+    <!-- ══ LEFT — Méthodes ════════════════════════════ -->
+    <div>
+
+        <div class="pay-methods">
+
+            <!-- Carte bancaire -->
+            <label class="pay-method" for="pay_card">
+                <input type="radio" name="payment_method" id="pay_card" value="card">
+                <div class="pay-method__icon">💳</div>
+                <div class="pay-method__info">
+                    <div class="pay-method__name">Carte bancaire</div>
+                    <div class="pay-method__desc">Visa, Mastercard, CMI — paiement immédiat et sécurisé.</div>
+                </div>
+                <div class="pay-method__check"><i class="bi bi-check-lg"></i></div>
+                <span class="pay-method__badge">Recommandé</span>
+            </label>
+             <!-- Virement -->
+            <!--  <label class="pay-method" for="pay_virement">
+                <input type="radio" name="payment_method" id="pay_virement" value="virement">
+                <div class="pay-method__icon">🏦</div>
+                <div class="pay-method__info">
+                    <div class="pay-method__name">Virement bancaire</div>
+                    <div class="pay-method__desc">Transférez directement depuis votre banque. Délai : 1–3 jours ouvrés.</div>
+                </div>
+                <div class="pay-method__check"><i class="bi bi-check-lg"></i></div>
+            </label>  -->
+
+
+
+            <!-- Cash à la livraison -->
+            <label class="pay-method" for="pay_cash">
+                <input type="radio" name="payment_method" id="pay_cash" value="cash">
+                <div class="pay-method__icon">💵</div>
+                <div class="pay-method__info">
+                    <div class="pay-method__name">Paiement à la livraison</div>
+                    <div class="pay-method__desc">Payez en espèces ou par chèque à la réception de votre colis.</div>
+                </div>
+                <div class="pay-method__check"><i class="bi bi-check-lg"></i></div>
+            </label>
+        </div>
+
+    </div>
+
+    <!-- ══ RIGHT — Sidebar ════════════════════════════ -->
+    <div class="pay-summary">
+
+        <div class="pay-summary__head">
+            <h3><i class="bi bi-receipt"></i> Récapitulatif</h3>
+        </div>
+
+        <div class="pay-summary__body">
+            <div class="sum-row">
+                <span class="lbl">Commande</span>
+                <span class="val">#{{ order.number }}</span>
+            </div>
+            <div class="sum-row">
+                <span class="lbl">Client</span>
+                <span class="val">{{ order.user.first_name }} {{ order.user.last_name }}</span>
+            </div>
+            <div class="sum-row">
+                <span class="lbl">Livraison</span>
+                <span class="val green"><i class="bi bi-check-circle me-1"></i>Gratuite</span>
+            </div>
+
+            <div class="sum-divider"></div>
+
+            <div class="sum-total">
+                <span class="lbl">À payer</span>
+                <span class="amount">{{ order.prix }}<sup>DH</sup></span>
+            </div>
+
+            <!-- Selected method display -->
+            <div class="pay-selected-display" id="selectedDisplay">
+                <i class="bi bi-credit-card-2-front"></i>
+                <span>Méthode : <span id="selectedMethodName">non sélectionnée</span></span>
+            </div>
+
+            <br>
+
+
+            <button type="submit" class="btn-pay" id="payBtn" disabled>
+                <i class="bi bi-lock-fill"></i>
+                <span>Payer {{ order.prix }} DH</span>
+            </button>
+
+
+
+            <a href="{% url 'order_page' order.id %}" class="btn-pay-back">
+                <i class="bi bi-arrow-left"></i> Retour à la commande
+            </a>
+
+        </div>
+
+        <div class="pay-summary__meta">
+            <div class="pay-meta-row">
+                <span>N° commande</span>
+                <span>#{{ order.number }}</span>
+            </div>
+            <div class="pay-meta-row">
+                <span>Date</span>
+                <span>{{ order.date|date:"d/m/Y" }}</span>
+            </div>
+            <div class="pay-meta-row">
+                <span>Statut</span>
+                <span>{{ order.get_status_display }}</span>
+            </div>
+        </div>
+
+        <div class="pay-trust">
+            <div class="trust-item"><i class="bi bi-shield-lock-fill"></i>SSL</div>
+            <div class="trust-item"><i class="bi bi-lock-fill"></i>Chiffré</div>
+            <div class="trust-item"><i class="bi bi-patch-check-fill"></i>Sécurisé</div>
+            <div class="trust-item"><i class="bi bi-arrow-counterclockwise"></i>30j retours</div>
+        </div>
+
+    </div>
+
+</div>
+</form>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+(function () {
+    const methods = document.querySelectorAll('.pay-method');
+    const payBtn  = document.getElementById('payBtn');
+    const nameEl  = document.getElementById('selectedMethodName');
+
+    const labels = {
+        card:     'Carte bancaire',
+        virement: 'Virement bancaire',
+        cash:     'Paiement à la livraison',
+        wallet:   'Wallet / Mobile Money',
+    };
+
+    methods.forEach(method => {
+        method.addEventListener('click', () => {
+            // deselect all
+            methods.forEach(m => m.classList.remove('selected'));
+            // select clicked
+            method.classList.add('selected');
+            // check radio
+            const radio = method.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+            // update UI
+            const val = radio?.value;
+            if (nameEl) nameEl.textContent = labels[val] || val;
+            if (payBtn) payBtn.disabled = false;
+        });
+    });
+})();
+</script>
+{% endblock %}

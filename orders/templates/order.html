@@ -262,7 +262,34 @@
 }
 .trust-item { display:flex; flex-direction:column; align-items:center; gap:.3rem; font-family:'Outfit',sans-serif; font-size:.58rem; font-weight:500; text-transform:uppercase; letter-spacing:1.2px; color:rgba(240,237,232,.2); }
 .trust-item i { font-size:.9rem; color:rgba(201,169,110,.3); }
+.btn-order-cancel {
+    font-family: 'Outfit', sans-serif;
+    font-size: .76rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: #b91c1c;
+    background: rgba(185,28,28,.07);
+    border: 1.5px solid rgba(185,28,28,.25);
+    border-radius: 10px;
+    padding: .85rem 1.4rem;
+    display: flex; align-items: center; justify-content: center; gap: .55rem;
+    width: 100%; cursor: pointer;
+    position: relative; overflow: hidden;
+    transition: all .28s ease;
+}
 
+.btn-order-cancel::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: #b91c1c;
+    transform: translateY(101%);
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+
+.btn-order-cancel:hover { color: #fff; border-color: #b91c1c; }
+.btn-order-cancel:hover::before { transform: translateY(0); }
+.btn-order-cancel > * { position: relative; z-index: 1; }
+.btn-order-cancel i { transition: transform .28s; }
+.btn-order-cancel:hover i { transform: rotate(90deg); }
 /* ── animations ──────────────────────────────────── */
 @keyframes fadeDown { from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeUp   { from{opacity:0;transform:translateY(20px)}  to{opacity:1;transform:translateY(0)} }
@@ -314,6 +341,7 @@
     <div>
 
         <!-- ── Client ──────────────────────────────── -->
+        <!--
         <div class="ob-panel">
             <div class="ob-panel__head">
                 <i class="bi bi-person-fill"></i> Client
@@ -337,7 +365,7 @@
 
             </div>
         </div>
-
+        -->
         <!-- ── Récapitulatif panier ─────────────────── -->
         <div class="ob-panel">
             <div class="ob-panel__head">
@@ -400,7 +428,7 @@
                     <div>
                         <div class="ob-info-row__label">Numéro de commande</div>
                         <div class="ob-info-row__value" style="color:var(--text-muted);font-style:italic;font-size:.82rem;">
-                            Généré automatiquement (UUID 10 caractères)
+                            {{ order.number }}
                         </div>
                     </div>
                 </div>
@@ -410,7 +438,7 @@
                     <div>
                         <div class="ob-info-row__label">Date</div>
                         <div class="ob-info-row__value" style="color:var(--text-muted);font-style:italic;font-size:.82rem;">
-                            Enregistrée automatiquement à la validation
+                            {{ order.date }}
                         </div>
                     </div>
                 </div>
@@ -418,10 +446,10 @@
                 <div class="ob-info-row">
                     <div class="ob-info-row__icon"><i class="bi bi-tag"></i></div>
                     <div>
-                        <div class="ob-info-row__label">Statut initial</div>
+                        <div class="ob-info-row__label">Statut</div>
                         <div class="ob-info-row__value">
                             <span style="background:rgba(183,110,0,.1);color:#b76e00;border:1px solid rgba(183,110,0,.2);font-family:'Outfit',sans-serif;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:.28em .75em;border-radius:20px;">
-                                En attente
+                                {{order.status}}
                             </span>
                         </div>
                     </div>
@@ -451,10 +479,7 @@
 
         <div class="ob-sidebar__body">
 
-            <div class="sum-row">
-                <span class="lbl">Client</span>
-                <span class="val">{{ request.user.first_name }} {{ request.user.last_name }}</span>
-            </div>
+
             <div class="sum-row">
                 <span class="lbl">Articles</span>
                 <span class="val">
@@ -469,7 +494,7 @@
             </div>
             <div class="sum-row">
                 <span class="lbl">Statut</span>
-                <span class="val" style="font-family:'Outfit',sans-serif;font-size:.78rem;color:#b76e00;">En attente</span>
+                <span class="val" style="font-family:'Outfit',sans-serif;font-size:.78rem;color:#b76e00;">{{ order.status }}</span>
             </div>
 
             <div class="sum-divider"></div>
@@ -479,17 +504,14 @@
                 <span class="amount">{{ total_price }}<sup>DH</sup></span>
             </div>
 
-            <div class="ob-auto-note">
-                <i class="bi bi-magic"></i>
-                Le numéro, la date et le montant sont générés automatiquement par le serveur.
-            </div>
+
 
             {% if cart.cartitem_set.all %}
                 <form method="post" id="orderForm" action="{% url 'valider_order' order.id %}">
                     {% csrf_token %}
                     <button type="submit" class="btn-place-order">
                         <i class="bi bi-check-lg"></i>
-                        <span>Passer la commande</span>
+                        <span>Valider la commande</span>
                     </button>
                 </form>
             {% else %}
@@ -498,10 +520,15 @@
                 <span>Panier vide</span>
             </button>
             {% endif %}
+                <form method="post" action="{% url 'anuller_order' order.id %}" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-order-cancel"
+                            onclick="return confirm('Annuler la commande #{{ order.number }} ?')">
+                        <i class="bi bi-x-circle"></i>
+                        <span>Annuler la commande</span>
+                    </button>
+                </form>
 
-            <a href="/cart/" class="btn-back-cart">
-                <i class="bi bi-arrow-left"></i> Modifier le panier
-            </a>
 
         </div>
 

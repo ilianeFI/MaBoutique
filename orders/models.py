@@ -11,11 +11,9 @@ class Order(models.Model):
     STATUS_CHOICES = [
         ('pending', 'En attente'),
         ('confirmed', 'Confirmée'),
-        ('processing', 'En préparation'),
-        ('shipped', 'Expédiée'),
         ('delivered', 'Livrée'),
         ('cancelled', 'Annulée'),
-        ('refunded', 'Remboursée'),
     ]
     status= models.CharField(max_length=20,choices=STATUS_CHOICES,default='pending')
+    article=models.IntegerField(null=True)
 

@@ -6,10 +6,9 @@ from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from cart.models import Cart,CartItem
 from requests import session
-
 from .forms import LoginForm,RegisterForm
 from django.contrib.auth import logout
-from cart.views import get_or_create_cart
+from cart.views import get_or_create_cart,merge_cart
 from django.contrib.auth.decorators import login_required
 # Tu devras créer ce formulaire
 
@@ -30,6 +29,8 @@ def login_view(request):
     return render(request, 'login.html', {'form': form})
 
 def register_view(request):
+
+    source = request.GET.get('next')
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
@@ -38,8 +39,13 @@ def register_view(request):
             user.set_password(form.cleaned_data['password'])
             user.save()
             login(request,user)
-
-            return redirect('home')
+            if source == 'order':
+                session_cart = get_or_create_cart(request)
+                user_cart, _ = Cart.objects.get_or_create(user=user)
+                merge_cart(session_cart, user_cart)
+                return redirect('create_order')
+            else:
+                return redirect('home')
     else:
         form = RegisterForm()
     return render(request, 'register.html', {'form': form})
@@ -53,4 +59,5 @@ def logout_view(request):
     if cart_id:
         request.session['cart_id']=cart_id
     return redirect('home')
+
 

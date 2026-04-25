@@ -5,6 +5,7 @@ from orders.forms import OrderForm
 from .models import Order
 import uuid
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 # Create your views here.
 
 def create_order(request):
@@ -19,6 +20,11 @@ def create_order(request):
                 cart_item=CartItem.objects.filter(cart=cart).select_related('product')
                 order.prix=get_total_price(cart_item)
                 order.number = str(uuid.uuid4())[:10].upper()
+                cart_item=CartItem.objects.filter(cart=cart)
+                articles=0
+                for item in cart_item:
+                    articles+=1
+                order.article=articles
                 order.save()
                 return redirect('order_page', order_number=order.number)
         else:
@@ -27,17 +33,19 @@ def create_order(request):
 
     #si l'invite a clicker sur passer Commande
     else:
-        return redirect('register')
+        return redirect('/register/?next=order')
 
 
 def order_page(request,order_number):
     order=get_object_or_404(Order,number=order_number,user=request.user)
     cart=get_or_create_cart(request)
+    cart_item=CartItem.objects.filter(cart=cart).select_related("product")
     total_price=order.prix
+    total_price = float(total_price) +float(total_price)*0.2
     return render(request, "order.html",{
         'cart': cart,
         'order':order,
-        'total_price':total_price
+        'total_price':total_price,
     })
 
 
@@ -47,6 +55,27 @@ def valider_order(request,order_id):
         order.status='confirmed'
         order.save()
         messages.success(request,"Order Valider avec success")
-        return redirect('cart-detail')
+        return redirect('paiment',order.id)#paiment
     else:
         return redirect('home')
+
+def annuler_order(request,order_id):
+    order=get_object_or_404(Order,id=order_id,user=request.user)
+    if request.method == 'POST':
+        order.status='cancelled'
+        order.save()
+        return redirect(request.META.get('HTTP_REFERER'))
+    else:
+        return redirect(request.META.get('HTTP_REFERER'))
+
+
+@login_required
+def order_list(request):
+    orders=Order.objects.filter(user=request.user).order_by('-date')
+    orders_pending=orders.filter(status='pending')
+    orders_delivered=orders.filter(status='delivered')
+    return render(request,'orders_list.html',{
+        'orders':orders,
+        'orders_pending':orders_pending,
+        'orders_delivered':orders_delivered,
+    })

@@ -10,25 +10,24 @@ from django.contrib import messages
 # Create your views here.
 
 def merge_cart(session_cart, user_cart):
-    # On boucle sur chaque article du panier session
+    # Sécurité : ne rien faire si c'est le même panier
+    if session_cart == user_cart:
+        return
+
+    # On boucle sur les items du panier session
     for item in session_cart.cartitem_set.all():
-        # On cherche si le même produit existe déjà dans le panier utilisateur
         existing_item = user_cart.cartitem_set.filter(product=item.product).first()
 
         if existing_item:
-            # Si le produit est déjà là : on additionne juste les quantités
             existing_item.quantity += item.quantity
             existing_item.save()
-            # On supprime l'article du panier invité puisqu'il est fusionné
             item.delete()
         else:
-            # Si le produit n'existe pas : on change simplement le propriétaire du panier
             item.cart = user_cart
             item.save()
 
-    # Une fois tous les articles déplacés, le panier session est vide
+    # Après la fusion, on supprime le panier invité
     session_cart.delete()
-
 
 def get_or_create_cart(request):
     # 1. On récupère le panier session si il existe

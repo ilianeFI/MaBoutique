@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% block title %}Paiement échoué — MaBoutique{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes shakeIn {
+        0%   { transform: scale(0); opacity: 0; }
+        40%  { transform: scale(1.1); }
+        60%  { transform: translateX(-6px) scale(1.05); }
+        80%  { transform: translateX(6px) scale(1.02); }
+        100% { transform: translateX(0) scale(1); opacity: 1; }
+    }
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(22px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse-red {
+        0%   { box-shadow: 0 0 0 0 rgba(192,57,43,.4); }
+        70%  { box-shadow: 0 0 0 16px rgba(192,57,43,0); }
+        100% { box-shadow: 0 0 0 0 rgba(192,57,43,0); }
+    }
+
+    .failed-page {
+        max-width: 640px;
+        margin: 0 auto;
+        animation: fadeUp .45s ease both;
+    }
+
+    /* ══ Hero ══════════════════════════════════════════════ */
+    .failed-hero {
+        text-align: center;
+        padding: 3rem 1.5rem 2rem;
+    }
+    .cross-circle {
+        width: 88px; height: 88px;
+        background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+        border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 2.2rem; color: #fff;
+        margin-bottom: 1.4rem;
+        animation: shakeIn .6s cubic-bezier(.4,0,.2,1) .1s both,
+                   pulse-red 2s ease 1s 2;
+    }
+    .failed-hero h1 {
+        font-size: clamp(1.6rem, 4vw, 2.1rem);
+        color: var(--brand-dark);
+        margin-bottom: .4rem;
+    }
+    .failed-hero p {
+        color: var(--text-muted);
+        font-size: .95rem;
+        max-width: 400px; margin: 0 auto;
+    }
+
+    /* ══ Order number badge ════════════════════════════════ */
+    .order-number-badge {
+        display: inline-flex; align-items: center; gap: .4rem;
+        background: rgba(185,28,28,.08);
+        border: 1px solid rgba(185,28,28,.2);
+        color: #b91c1c;
+        font-family: 'Outfit', monospace;
+        font-size: .8rem; font-weight: 700;
+        padding: .3em .8em; border-radius: 20px;
+        letter-spacing: .5px;
+        margin-bottom: 1.1rem;
+    }
+
+    /* ══ Card ══════════════════════════════════════════════ */
+    .fail-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        margin-bottom: 1rem;
+        animation: fadeUp .5s ease .2s both;
+    }
+    .fail-card__header {
+        background: #b91c1c;
+        color: #fff;
+        padding: .95rem 1.5rem;
+        display: flex; align-items: center; gap: .6rem;
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.05rem; font-weight: 600;
+    }
+    .fail-card__body { padding: 1.5rem; }
+
+    /* ══ Info grid ═════════════════════════════════════════ */
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1.4rem;
+    }
+    @media (max-width: 500px) { .info-grid { grid-template-columns: 1fr; } }
+
+    .info-block {
+        background: var(--smoke, #f0ede8);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1rem 1.1rem;
+        position: relative; overflow: hidden;
+    }
+    .info-block::before {
+        content: '';
+        position: absolute; top: 0; left: 0;
+        width: 3px; height: 100%;
+        background: #e74c3c;
+    }
+    .info-block__icon { font-size: 1.2rem; color: #e74c3c; margin-bottom: .3rem; }
+    .info-block__label {
+        font-size: .72rem; font-weight: 600;
+        text-transform: uppercase; letter-spacing: .5px;
+        color: var(--text-muted); margin-bottom: .2rem;
+    }
+    .info-block__value {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.15rem; font-weight: 600;
+        color: var(--brand-dark); line-height: 1.2;
+    }
+    .info-block__sub { font-size: .78rem; color: var(--text-muted); margin-top: .15rem; }
+
+    /* ══ Section divider ═══════════════════════════════════ */
+    .section-divider { border: none; border-top: 1px solid var(--border); margin: 1.2rem 0; }
+
+    /* ══ Reasons list ══════════════════════════════════════ */
+    .reason-list { list-style: none; padding: 0; margin: 0 0 1.4rem; }
+    .reason-list li {
+        display: flex; align-items: flex-start; gap: .65rem;
+        padding: .6rem 0; border-bottom: 1px solid var(--border);
+        font-size: .9rem; color: #444;
+    }
+    .reason-list li:last-child { border-bottom: none; }
+    .reason-list li i { color: #e74c3c; font-size: 1rem; margin-top: .1rem; flex-shrink: 0; }
+
+    /* ══ Actions ═══════════════════════════════════════════ */
+    .actions { display: flex; flex-wrap: wrap; gap: .75rem; animation: fadeUp .5s ease .35s both; }
+    .btn-retry {
+        background: var(--brand-accent);
+        color: var(--brand-dark) !important;
+        border: 2px solid var(--brand-accent); font-weight: 600;
+    }
+    .btn-retry:hover {
+        background: #b8935a; border-color: #b8935a;
+        transform: translateY(-2px); box-shadow: 0 6px 18px rgba(201,169,110,.38);
+    }
+
+    /* ══ Support block ═════════════════════════════════════ */
+    .support-block {
+        background: var(--smoke, #f0ede8);
+        border: 1px solid var(--border); border-radius: 10px;
+        padding: 1rem 1.2rem;
+        display: flex; align-items: center; gap: .75rem;
+        margin-top: 1rem;
+        animation: fadeUp .5s ease .45s both;
+    }
+    .support-block i { font-size: 1.4rem; color: var(--brand-accent); flex-shrink: 0; }
+    .support-block p { margin: 0; font-size: .87rem; color: var(--text-muted); }
+    .support-block a { color: var(--brand-accent); font-weight: 600; text-decoration: underline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="failed-page">
+
+    <!-- Hero -->
+    <div class="failed-hero">
+        <div class="cross-circle">
+            <i class="bi bi-x-lg"></i>
+        </div>
+        <h1>Paiement échoué</h1>
+        <p>Votre paiement n'a pas pu être traité. Aucun montant n'a été débité de votre compte.</p>
+    </div>
+
+    <!-- Main card -->
+    <div class="fail-card">
+        <div class="fail-card__header">
+            <i class="bi bi-receipt"></i>
+            Détails de la commande annulée
+        </div>
+        <div class="fail-card__body">
+
+            <!-- Order number -->
+            <div class="order-number-badge">
+                <i class="bi bi-hash"></i>
+                Commande n° {{ order.number }}
+            </div>
+
+            <!-- Info grid -->
+            <div class="info-grid">
+                <div class="info-block">
+                    <div class="info-block__icon"><i class="bi bi-calendar-x"></i></div>
+                    <div class="info-block__label">Date de commande</div>
+                    <div class="info-block__value">{{ order.date|date:"d M Y" }}</div>
+                    <div class="info-block__sub">{{ order.date|date:"H:i" }}</div>
+                </div>
+                <div class="info-block">
+                    <div class="info-block__icon"><i class="bi bi-x-circle"></i></div>
+                    <div class="info-block__label">Statut</div>
+                    <div class="info-block__value" style="font-size:1rem; margin-top:.25rem;">
+                        <span class="badge-custom badge-danger">
+                            <i class="bi bi-x-circle-fill me-1"></i>Annulée
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="section-divider">
+
+            <!-- Reasons -->
+            <p style="font-family:'Cormorant Garamond',serif; font-size:1.05rem; font-weight:600; margin-bottom:.8rem; color:var(--brand-dark);">
+                <i class="bi bi-exclamation-triangle-fill me-1" style="color:#e74c3c;"></i>
+                Raisons possibles de l'échec
+            </p>
+            <ul class="reason-list">
+                <li><i class="bi bi-credit-card-2-front"></i><span>Informations de carte invalides ou expirées</span></li>
+                <li><i class="bi bi-shield-exclamation"></i><span>Transaction refusée par votre banque pour raison de sécurité</span></li>
+                <li><i class="bi bi-wallet2"></i><span>Solde insuffisant sur votre compte</span></li>
+                <li><i class="bi bi-wifi-off"></i><span>Problème de connexion durant la transaction</span></li>
+            </ul>
+
+            <!-- Actions -->
+            <div class="actions">
+                <a href="/cart/" class="btn btn-retry">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    Réessayer le paiement
+                </a>
+                <a href="{% url 'orders_list' %}" class="btn btn-outline-custom">
+                    <i class="bi bi-receipt"></i>
+                    Mes commandes
+                </a>
+                <a href="/product/" class="btn btn-primary-custom">
+                    <i class="bi bi-grid"></i>
+                    Continuer mes achats
+                </a>
+            </div>
+
+            <!-- Support -->
+            <div class="support-block">
+                <i class="bi bi-headset"></i>
+                <p>
+                    Besoin d'aide ? Contactez notre support à
+                    <a href="mailto:support@maboutique.ma">support@maboutique.ma</a>
+                    ou vérifiez auprès de votre banque.
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
