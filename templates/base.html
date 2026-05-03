@@ -101,13 +101,11 @@
 
         /* ── orders badge ── */
         .nav-orders-badge {
-            background: rgba(201,169,110,.2);
-            color: var(--brand-accent);
+            background: rgba(201,169,110,.2); color: var(--brand-accent);
             font-family: 'Outfit', sans-serif;
             font-size: .6rem; font-weight: 700;
             padding: .15em .55em; border-radius: 20px;
-            border: 1px solid rgba(201,169,110,.3);
-            line-height: 1.4;
+            border: 1px solid rgba(201,169,110,.3); line-height: 1.4;
         }
 
         /* ── user pill ── */
@@ -133,6 +131,55 @@
             display: flex; align-items: center; justify-content: center;
             font-size: .7rem; font-weight: 700;
             color: var(--brand-dark); flex-shrink: 0;
+        }
+
+        /* ── ADMIN BUTTON ── */
+        .btn-nav-admin {
+            font-family: 'Outfit', sans-serif;
+            font-size: .75rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1.5px;
+            color: var(--brand-dark) !important;
+            background: linear-gradient(135deg, #c9a96e 0%, #e8c98a 50%, #c9a96e 100%);
+            background-size: 200% auto;
+            padding: .42rem 1rem !important;
+            border-radius: 7px; border: none;
+            transition: var(--transition);
+            display: flex; align-items: center; gap: .45rem;
+            position: relative; overflow: hidden;
+            box-shadow: 0 2px 10px rgba(201,169,110,.35);
+            animation: adminGlow 3s ease-in-out infinite;
+        }
+        .btn-nav-admin:hover {
+            color: var(--brand-dark) !important;
+            background-position: right center;
+            box-shadow: 0 4px 18px rgba(201,169,110,.55);
+            transform: translateY(-1px);
+        }
+        .btn-nav-admin .admin-crown {
+            font-size: .8rem;
+            animation: crownBounce 2s ease-in-out infinite;
+        }
+        /* subtle glow pulse */
+        @keyframes adminGlow {
+            0%,100% { box-shadow: 0 2px 10px rgba(201,169,110,.35); }
+            50%      { box-shadow: 0 2px 18px rgba(201,169,110,.6); }
+        }
+        @keyframes crownBounce {
+            0%,100% { transform: translateY(0); }
+            50%      { transform: translateY(-2px); }
+        }
+
+        /* admin badge dot */
+        .admin-dot {
+            position: absolute; top: -3px; right: -3px;
+            width: 8px; height: 8px;
+            background: #e74c3c; border-radius: 50%;
+            border: 1.5px solid var(--brand-dark);
+            animation: dotPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes dotPulse {
+            0%,100% { transform: scale(1); opacity: 1; }
+            50%      { transform: scale(1.4); opacity: .7; }
         }
 
         /* ── auth buttons ── */
@@ -355,18 +402,39 @@
                     {% endif %}
                 </ul>
 
-                <!-- ── Auth section ── -->
+                <!-- ── Auth + Admin section ── -->
                 <ul class="navbar-nav align-items-center gap-2 pt-2 pt-lg-0">
 
                     {% if user.is_authenticated %}
+
+                        {# ── Admin button — visible uniquement si staff ou superuser ── #}
+                        {% if user.is_staff or user.is_superuser %}
+                        <li class="nav-item">
+                            <a href="/admin/" class="nav-link btn-nav-admin" target="_blank">
+                                <span class="admin-crown"></span>
+                                <span>Admin</span>
+                                <span class="admin-dot"></span>
+                            </a>
+                        </li>
+                        <div class="nav-sep"></div>
+                        {% endif %}
+
+                        {# ── User pill ── #}
                         <li class="nav-item">
                             <span class="nav-link nav-user">
                                 <div class="nav-user__avatar">
                                     {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
                                 </div>
                                 {{ user.first_name }}
+                                {% if user.is_superuser %}
+                                <span style="font-size:.55rem;color:var(--brand-accent);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-left:.1rem;">· Super</span>
+                                {% elif user.is_staff %}
+                                <span style="font-size:.55rem;color:rgba(201,169,110,.6);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-left:.1rem;">· Staff</span>
+                                {% endif %}
                             </span>
                         </li>
+
+                        {# ── Logout ── #}
                         <li class="nav-item">
                             <form method="post" action="{% url 'logout' %}" style="margin:0;">
                                 {% csrf_token %}
@@ -376,7 +444,10 @@
                                 </button>
                             </form>
                         </li>
+
                     {% else %}
+
+                        {# ── Not logged in ── #}
                         <li class="nav-item">
                             <a class="nav-link btn-nav-login" href="{% url 'login' %}">
                                 <i class="bi bi-person"></i> Connexion
@@ -387,6 +458,7 @@
                                 <i class="bi bi-person-plus"></i> S'inscrire
                             </a>
                         </li>
+
                     {% endif %}
 
                 </ul>
@@ -434,7 +506,13 @@
                 <div class="col-md-3 text-md-end">
                     {% if user.is_authenticated %}
                         <small style="color:rgba(255,255,255,.3);">
-                            Connecté en tant que <span style="color:var(--brand-accent);">{{ user.first_name }}</span>
+                            {% if user.is_superuser %}
+                                <span style="color:var(--brand-accent);">{{ user.first_name }}</span> · Superadmin
+                            {% elif user.is_staff %}
+                                <span style="color:var(--brand-accent);">{{ user.first_name }}</span> · Staff
+                            {% else %}
+                                Connecté · <span style="color:var(--brand-accent);">{{ user.first_name }}</span>
+                            {% endif %}
                         </small>
                     {% else %}
                         <a href="{% url 'login' %}" class="me-2">Connexion</a>

@@ -32,7 +32,7 @@ def process_stripe_payment(request, order_id):
             reverse('paiment_success', kwargs={'order_id': order.id})
         ),
         cancel_url=request.build_absolute_uri(
-            reverse('payment_failed')  # Plus besoin de kwargs
+            reverse('payment_failed')
         )
     )
 

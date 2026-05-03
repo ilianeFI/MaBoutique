@@ -6,6 +6,8 @@ from .models import Order
 import uuid
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.db.models import F
 # Create your views here.
 
 def create_order(request):
@@ -52,6 +54,17 @@ def order_page(request,order_number):
 def valider_order(request,order_id):
     order=get_object_or_404(Order,id=order_id,user=request.user)
     if request.method == 'POST':
+        cart=get_or_create_cart(request)
+        Cart_Item=CartItem.objects.filter(cart=cart).select_related("product")
+        with transaction.atomic():
+            for item in Cart_Item:
+                product=item.product
+                if product.quantity>0:
+                    quantity_ordred=item.quantity
+                    product.quantity=F('quantity')-quantity_ordred
+                    product.save(update_fields=["quantity"])
+                else:
+                    raise ValueError(f"Produit {product.name} épuisé")
         order.status='confirmed'
         order.save()
         messages.success(request,"Order Valider avec success")
