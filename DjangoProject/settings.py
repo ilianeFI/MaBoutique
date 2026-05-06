@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from dotenv import load_dotenv
 from pathlib import Path
+from django.templatetags.static import static
+# ── À mettre en haut de settings.py ──────────────────────────
+from django.urls import reverse_lazy
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
@@ -37,23 +41,185 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    "unfold",  # Doit être avant django.contrib.admin
+    # 1. Unfold Core en PREMIER
+    "unfold",
+    "unfold.contrib.filters",
+    "unfold.contrib.forms",
+    "unfold.contrib.inlines",        # Remonte-le ici
+    "unfold.contrib.simple_history", # Remonte-le ici
+
+    # 2. Django Admin en DEUXIÈME
     'django.contrib.admin',
+    
+    # 3. Le reste de Django
     'django.contrib.auth',
+    'django.contrib.humanize',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "unfold.contrib.filters", # Optionnel: pour des filtres améliorés
-    "unfold.contrib.forms",   # Optionnel: pour des widgets stylisés
+
+    # 4. Tes Apps
+    "users",
     'products',
-    'users',
     'orders',
     'cart',
     'base',
     'payments'
 ]
 
+UNFOLD = {
+    # ── Identité ──────────────────────────────────────────────
+    "SITE_TITLE"        : "Maboutique",
+    "SITE_HEADER"       : "Maboutique Admin",
+    "SITE_URL"          : "/",
+    "SITE_SYMBOL"       : "storefront",
+    "SHOW_HISTORY"      : True,
+    "SHOW_VIEW_ON_SITE" : True,
+
+    # ── Dashboard ─────────────────────────────────────────────
+    "DASHBOARD_CALLBACK" : "products.dashboard.dashboard_callback",
+    "DASHBOARD_TEMPLATE" : "admin/index.html",
+
+    # ── Thème violet ──────────────────────────────────────────
+    "COLORS": {
+        "font": {
+            "subtle-light"   : "107 114 128",
+            "subtle-dark"    : "156 163 175",
+            "default-light"  : "75 85 99",
+            "default-dark"   : "209 213 219",
+            "important-light": "17 24 39",
+            "important-dark" : "243 244 246",
+        },
+        "primary": {
+            "50" : "240 238 255",
+            "100": "221 218 254",
+            "200": "196 191 253",
+            "300": "165 158 250",
+            "400": "139 129 248",
+            "500": "108 99 255",
+            "600": "88 78 235",
+            "700": "70 59 210",
+            "800": "56 46 175",
+            "900": "42 33 140",
+            "950": "26 18 95",
+        },
+    },
+
+    # ── Actions rapides (header) ───────────────────────────────
+    "ACTIONS": [
+        {
+            "icon"       : "inventory_2",
+            "title"      : "Ajouter un produit",
+            "description": "Ajouter un article au catalogue",
+            "link"       : "/admin/products/product/add/",
+            "permission" : lambda request: request.user.is_staff,
+        },
+        {
+            "icon"       : "add_shopping_cart",
+            "title"      : "Nouvelle commande",
+            "description": "Créer une commande manuellement",
+            "link"       : "/admin/orders/order/add/",
+            "permission" : lambda request: request.user.is_staff,
+        },
+    ],
+
+    # ── Sidebar ───────────────────────────────────────────────
+    "SIDEBAR": {
+        "show_search"         : True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title"    : "Tableau de bord",
+                "separator": False,
+                "items": [
+                    {
+                        "title": "Accueil",
+                        "icon" : "dashboard",
+                        "link" : reverse_lazy("admin:index"),
+                        "badge": "products.dashboard.badge_alertes",
+                    },
+                ],
+            },
+            {
+                "title"    : "Catalogue",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Produits",
+                        "icon" : "inventory_2",
+                        "link" : reverse_lazy("admin:products_product_changelist"),
+                        "badge": "products.dashboard.badge_produits",
+                    },
+                ],
+            },
+            {
+                "title"    : "Ventes",
+                "separator": False,
+                "items": [
+                    {
+                        "title": "Commandes",
+                        "icon" : "shopping_cart",
+                        "link" : reverse_lazy("admin:orders_order_changelist"),
+                        "badge": "products.dashboard.badge_commandes",
+                    },
+                    {
+                        "title": "Paniers Actifs",
+                        "icon" : "shopping_basket",
+                        "link" : reverse_lazy("admin:cart_cart_changelist"),
+                    },
+                ],
+            },
+            {
+                "title"    : "Utilisateurs",
+                "separator": False,
+                "items": [
+                    {
+                        "title": "Comptes Clients",
+                        "icon" : "person",
+                        "link" : reverse_lazy("admin:users_customuser_changelist"),
+                    },
+                ],
+            },
+        ],
+    },
+
+    # ── Tabs ──────────────────────────────────────────────────
+    # ✅ Strings hardcodées — reverse_lazy() interdit ici
+    "TABS": [
+        {
+            "models": ["products.product"],
+            "items": [
+                {
+                    "title": "Tous les produits",
+                    "link" : "/admin/products/product/",
+                },
+                {
+                    "title": "⚠ Stock critique",
+                    "link" : "/admin/products/product/?quantity__lte=5",
+                },
+            ],
+        },
+        {
+            "models": ["orders.order"],
+            "items": [
+                {
+                    "title": "Toutes les commandes",
+                    "link" : "/admin/orders/order/",
+                },
+                {
+                    "title": "En attente",
+                    "link" : "/admin/orders/order/?status=pending",
+                },
+                {
+                    "title": "Complétées",
+                    "link" : "/admin/orders/order/?status=completed",
+                },
+            ],
+        },
+    ],
+}
+ 
 
 
 MIDDLEWARE = [
@@ -69,6 +235,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'DjangoProject.urls'
 AUTH_USER_MODEL = 'users.CustomUser'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

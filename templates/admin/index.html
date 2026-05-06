@@ -1,0 +1,431 @@
+{% extends 'admin/base_site.html' %}
+{% load i18n humanize %}
+
+{# ── 1. On cache les titres et breadcrumbs natifs de Django ── #}
+{% block breadcrumbs %}{% endblock %}
+{% block content_title %}{% endblock %}
+
+{% block content %}
+{{ chart_labels|json_script:"chart-labels" }}
+{{ chart_data|json_script:"chart-data" }}
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ── 2. On retire le sélecteur universel (*) qui cassait le menu Unfold ── */
+/* On applique les box-sizing uniquement au contenu du dashboard */
+
+:root {
+  --bg     : transparent; /* Laisse le fond d'Unfold gérer la couleur principale */
+  --s1     : #111827; /* Adapté aux couleurs Unfold */
+  --s2     : #1f2937;
+  --s3     : #374151;
+  --border : #374151;
+  --muted  : #9ca3af;
+  --txt    : #f3f4f6;
+  --white  : #ffffff;
+  --purple : #8b5cf6;
+  --purple2: #a78bfa;
+  --green  : #10b981;
+  --amber  : #f59e0b;
+  --red    : #ef4444;
+  --r      : 14px;
+  --r-sm   : 9px;
+}
+
+/* On cible uniquement les éléments dans .db pour ne pas polluer l'admin */
+.db * { box-sizing: border-box; }
+
+/* ── 3. On corrige les marges du conteneur principal ── */
+.db { 
+  font-family: 'Sora', sans-serif; 
+  padding: 0 0 30px 0; /* Unfold gère déjà les marges gauche/droite */
+  /* min-height supprimé pour éviter la double barre de défilement */
+}
+
+/* ── Header ───────────────────────────── */
+.db-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; margin-top: 10px; }
+.db-greeting { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+.db-title { font-size: 26px; font-weight: 700; color: var(--white); letter-spacing: -.6px; margin: 0; }
+.db-title span { color: var(--purple2); }
+.db-badges { display: flex; gap: 8px; align-items: center; }
+.badge { display: flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 500; border: 1px solid; margin: 0;}
+.badge-live { background: #00e5a010; border-color: #00e5a030; color: var(--green); }
+.badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
+
+/* ── KPI grid ─────────────────────────── */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.kpi { background: var(--s2); border: 1px solid var(--border); border-radius: var(--r); padding: 22px 20px; position: relative; overflow: hidden; transition: transform .2s, border-color .25s; cursor: default; }
+.kpi:hover { transform: translateY(-3px); }
+.kpi::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: var(--r) var(--r) 0 0; }
+.kpi.purple::after { background: linear-gradient(90deg, var(--purple), var(--purple2)); }
+.kpi.green::after  { background: linear-gradient(90deg, var(--green), #00ffcc); }
+.kpi.amber::after  { background: linear-gradient(90deg, var(--amber), #ff8c42); }
+.kpi.red::after    { background: linear-gradient(90deg, var(--red), #ff8fa3); }
+.kpi:hover.purple  { border-color: #7c6fff44; }
+.kpi:hover.green   { border-color: #00e5a044; }
+.kpi:hover.amber   { border-color: #ffb83044; }
+.kpi:hover.red     { border-color: #ff4d6a44; }
+
+.kpi-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+.kpi-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.kpi-icon.purple { background: #7c6fff15; color: var(--purple2); }
+.kpi-icon.green  { background: #00e5a015; color: var(--green); }
+.kpi-icon.amber  { background: #ffb83015; color: var(--amber); }
+.kpi-icon.red    { background: #ff4d6a15; color: var(--red); }
+.kpi-icon .material-symbols-outlined { font-size: 22px; }
+
+.kpi-chip { font-size: 10px; font-family: 'DM Mono', monospace; padding: 3px 9px; border-radius: 20px; font-weight: 500; }
+.chip-green { background: #00e5a015; color: var(--green); }
+.chip-red   { background: #ff4d6a15; color: var(--red); }
+.chip-amber { background: #ffb83015; color: var(--amber); }
+
+.kpi-val { font-size: 36px; font-weight: 700; letter-spacing: -1.5px; color: var(--white); font-variant-numeric: tabular-nums; line-height: 1; margin: 0; }
+.kpi-lbl { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+/* ── Main layout ──────────────────────── */
+.main-grid { display: grid; grid-template-columns: 1fr 310px; gap: 14px; margin-bottom: 14px; }
+.col-right  { display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Panel ────────────────────────────── */
+.panel { background: var(--s2); border: 1px solid var(--border); border-radius: var(--r); padding: 22px; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.panel-title { font-size: 13px; font-weight: 600; color: var(--txt); display: flex; align-items: center; gap: 8px; margin: 0;}
+.panel-title .material-symbols-outlined { font-size: 17px; color: var(--muted); }
+.panel-link { font-size: 11px; color: var(--purple2); text-decoration: none; font-weight: 500; opacity: .8; transition: opacity .2s; }
+.panel-link:hover { opacity: 1; }
+
+/* ── Chart ────────────────────────────── */
+.chart-box { height: 190px; position: relative; }
+
+/* ── Orders table ─────────────────────── */
+.orders { display: flex; flex-direction: column; gap: 8px; }
+.order { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--s1); border: 1px solid var(--border); border-radius: var(--r-sm); transition: border-color .2s; }
+.order:hover { border-color: #7c6fff44; }
+.order-l { display: flex; align-items: center; gap: 11px; }
+.ava { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.ava-1 { background: linear-gradient(135deg,#7c6fff,#b8aeff); }
+.ava-2 { background: linear-gradient(135deg,#ffb830,#ff7d42); }
+.ava-3 { background: linear-gradient(135deg,#00e5a0,#00b8d4); }
+.ava-4 { background: linear-gradient(135deg,#ff4d6a,#ff87ab); }
+.ava-5 { background: linear-gradient(135deg,#38d9ff,#7c6fff); }
+.order-name { font-size: 12px; font-weight: 600; color: var(--txt); }
+.order-id   { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
+.order-r    { display: flex; align-items: center; gap: 10px; }
+.order-amt  { font-size: 13px; font-weight: 700; color: var(--txt); font-family: 'DM Mono', monospace; }
+.pill { font-size: 9px; font-weight: 700; padding: 3px 9px; border-radius: 20px; letter-spacing: .5px; text-transform: uppercase; border: 1px solid; font-family: 'DM Mono', monospace; }
+.pill-green { background:#00e5a012; color:var(--green); border-color:#00e5a030; }
+.pill-amber { background:#ffb83012; color:var(--amber); border-color:#ffb83030; }
+.pill-red   { background:#ff4d6a12; color:var(--red);   border-color:#ff4d6a30; }
+.pill-gray  { background:#7a85a012; color:var(--muted); border-color:#7a85a030; }
+
+/* ── Stock bars ───────────────────────── */
+.stocks { display: flex; flex-direction: column; gap: 12px; }
+.stock-row { display: flex; align-items: center; gap: 10px; }
+.stock-name  { font-size: 12px; color: var(--txt); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stock-track { height: 4px; width: 80px; background: var(--border); border-radius: 2px; flex-shrink: 0; }
+.stock-fill  { height: 4px; border-radius: 2px; transition: width .6s ease; }
+.stock-qty   { font-size: 11px; font-family: 'DM Mono', monospace; font-weight: 600; min-width: 22px; text-align: right; }
+
+/* ── Mini metrics ─────────────────────── */
+.mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mini { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 14px 16px; }
+.mini-val { font-size: 20px; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--white); }
+.mini-lbl { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+/* ── CA card ──────────────────────────── */
+.ca-card { background: linear-gradient(135deg, #111827 0%, #1f2937 100%); border: 1px solid var(--border); border-radius: var(--r); padding: 22px; }
+.ca-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.ca-value { font-size: 24px; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--green); letter-spacing: -1px; margin: 0;}
+.ca-sub   { font-size: 13px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--txt); }
+.ca-divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+/* ── Footer ───────────────────────────── */
+.db-footer { display: flex; align-items: center; justify-content: space-between; background: var(--s2); border: 1px solid var(--border); border-radius: var(--r); padding: 13px 20px; margin-top: 14px; }
+.footer-item { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.footer-dot  { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
+.footer-link { color: var(--purple2); text-decoration: none; display: flex; align-items: center; gap: 5px; font-size: 11px; }
+
+/* ── Empty state ──────────────────────── */
+.empty { text-align: center; padding: 24px; font-size: 12px; color: var(--muted); }
+</style>
+
+<div class="db">
+
+  {# ── Header ──────────────────────────────────────────────── #}
+  <div class="db-head">
+    <div>
+      <div class="db-greeting">Bienvenue sur votre espace admin</div>
+      <h1 class="db-title">Tableau de bord <span>Maboutique</span></h1>
+    </div>
+    <div class="db-badges">
+      <div class="badge badge-live">
+        <div class="badge-dot"></div>
+        Live
+      </div>
+    </div>
+  </div>
+
+  {# ── KPIs ────────────────────────────────────────────────── #}
+  <div class="kpi-grid">
+
+    <div class="kpi purple">
+      <div class="kpi-top">
+        <div class="kpi-icon purple">
+          <span class="material-symbols-outlined">inventory_2</span>
+        </div>
+        <div class="kpi-chip chip-green">Actif</div>
+      </div>
+      <p class="kpi-val">{{ total_products|default:"0" }}</p>
+      <div class="kpi-lbl">Produits en catalogue</div>
+    </div>
+
+    <div class="kpi green">
+      <div class="kpi-top">
+        <div class="kpi-icon green">
+          <span class="material-symbols-outlined">shopping_cart</span>
+        </div>
+        <div class="kpi-chip chip-green">+{{ orders_ce_mois|default:"0" }} mois</div>
+      </div>
+      <p class="kpi-val">{{ total_orders|default:"0" }}</p>
+      <div class="kpi-lbl">Commandes reçues</div>
+    </div>
+
+    <div class="kpi amber">
+      <div class="kpi-top">
+        <div class="kpi-icon amber">
+          <span class="material-symbols-outlined">shopping_basket</span>
+        </div>
+        <div class="kpi-chip chip-amber">En cours</div>
+      </div>
+      <p class="kpi-val">{{ paniers_actifs|default:"0" }}</p>
+      <div class="kpi-lbl">Paniers actifs</div>
+    </div>
+
+    <div class="kpi {% if low_stock > 0 %}red{% else %}green{% endif %}">
+      <div class="kpi-top">
+        <div class="kpi-icon {% if low_stock > 0 %}red{% else %}green{% endif %}">
+          <span class="material-symbols-outlined">{% if low_stock > 0 %}warning{% else %}check_circle{% endif %}</span>
+        </div>
+        <div class="kpi-chip {% if low_stock > 0 %}chip-red{% else %}chip-green{% endif %}">
+          {% if low_stock > 0 %}Urgent{% else %}OK{% endif %}
+        </div>
+      </div>
+      <p class="kpi-val" {% if low_stock > 0 %}style="color:var(--red)"{% endif %}>{{ low_stock|default:"0" }}</p>
+      <div class="kpi-lbl">Stock critique (≤ 5)</div>
+    </div>
+
+  </div>
+
+  {# ── Contenu principal ───────────────────────────────────── #}
+  <div class="main-grid">
+
+    <div style="display:flex;flex-direction:column;gap:14px;">
+
+      {# Graphique #}
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">
+            <span class="material-symbols-outlined">bar_chart</span>
+            Commandes — 7 derniers jours
+          </h2>
+        </div>
+        <div class="chart-box">
+          <canvas id="ordersChart"></canvas>
+        </div>
+      </div>
+
+      {# Commandes récentes #}
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">
+            <span class="material-symbols-outlined">receipt_long</span>
+            Commandes récentes
+          </h2>
+          <a class="panel-link" href="/admin/orders/order/">Voir toutes →</a>
+        </div>
+        <div class="orders">
+          {% for order in recent_orders %}
+          <div class="order">
+            <div class="order-l">
+              <div class="ava ava-{{ forloop.counter }}">
+                {% if order.user %}{{ order.user.first_name|first|upper }}{{ order.user.last_name|first|upper }}{% else %}?{% endif %}
+              </div>
+              <div>
+                <div class="order-name">
+                  {% if order.user %}{{ order.user.get_full_name|default:order.user.email }}{% else %}Invité{% endif %}
+                </div>
+                <div class="order-id">#CMD-{{ order.id|stringformat:"05d" }}</div>
+              </div>
+            </div>
+            <div class="order-r">
+              {% if order.prix %}
+              <div class="order-amt">{{ order.prix|floatformat:0|intcomma }} MAD</div>
+              {% endif %}
+              {% if order.status == "completed" or order.status == "paid" %}
+                <div class="pill pill-green">Payé</div>
+              {% elif order.status == "pending" %}
+                <div class="pill pill-amber">En attente</div>
+              {% elif order.status == "cancelled" or order.status == "refunded" %}
+                <div class="pill pill-red">Annulé</div>
+              {% else %}
+                <div class="pill pill-gray">{{ order.status }}</div>
+              {% endif %}
+            </div>
+          </div>
+          {% empty %}
+          <div class="empty">Aucune commande pour le moment.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+
+    {# Colonne droite #}
+    <div class="col-right">
+
+      {# CA #}
+      <div class="ca-card">
+        <div class="ca-label">Chiffre d'affaires — ce mois</div>
+        <p class="ca-value">{{ ca_mois|default:"0"|floatformat:0|intcomma }} MAD</p>
+        <div class="ca-divider"></div>
+        <div class="ca-label">Total cumulé</div>
+        <div class="ca-sub">{{ ca_total|default:"0"|floatformat:0|intcomma }} MAD</div>
+      </div>
+
+      {# Stock critique #}
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">
+            <span class="material-symbols-outlined" style="color:var(--amber)">local_fire_department</span>
+            Stock critique
+          </h2>
+          <a class="panel-link" href="/admin/products/product/?quantity__lte=5">Gérer →</a>
+        </div>
+        <div class="stocks">
+          {% for p in critical_products %}
+          <div class="stock-row">
+            <div class="stock-name" title="{{ p.name }}">{{ p.name }}</div>
+            <div class="stock-track">
+              <div class="stock-fill" style="
+                width: {% if p.quantity == 0 %}4{% else %}{{ p.quantity }}0{% endif %}%;
+                background: {% if p.quantity == 0 or p.quantity <= 2 %}var(--red){% elif p.quantity <= 4 %}var(--amber){% else %}var(--green){% endif %};
+              "></div>
+            </div>
+            <div class="stock-qty" style="color:{% if p.quantity == 0 or p.quantity <= 2 %}var(--red){% elif p.quantity <= 4 %}var(--amber){% else %}var(--green){% endif %}">
+              {{ p.quantity }}
+            </div>
+          </div>
+          {% empty %}
+          <div class="empty">✓ Aucun produit en rupture</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      {# Mini stats #}
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">
+            <span class="material-symbols-outlined">insights</span>
+            Résumé
+          </h2>
+        </div>
+        <div class="mini-grid">
+          <div class="mini">
+            <div class="mini-val" style="color:var(--purple2)">{{ total_clients|default:"0" }}</div>
+            <div class="mini-lbl">Clients total</div>
+          </div>
+          <div class="mini">
+            <div class="mini-val" style="color:var(--green)">{{ nouveaux_clients|default:"0" }}</div>
+            <div class="mini-lbl">Nouveaux mois</div>
+          </div>
+          <div class="mini">
+            <div class="mini-val">{{ out_of_stock|default:"0" }}</div>
+            <div class="mini-lbl">Rupture totale</div>
+          </div>
+          <div class="mini">
+            <div class="mini-val" style="color:var(--amber)">{{ orders_ce_mois|default:"0" }}</div>
+            <div class="mini-lbl">Cmds ce mois</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {# ── Footer ──────────────────────────────────────────────── #}
+  <div class="db-footer">
+    <div class="footer-item"><div class="footer-dot"></div> Synchronisation active</div>
+    <div class="footer-item">
+      <span class="material-symbols-outlined" style="font-size:14px">schedule</span>
+      Mise à jour en temps réel
+    </div>
+    <a href="/admin/" class="footer-link">
+      <span class="material-symbols-outlined" style="font-size:14px">refresh</span>
+      Actualiser
+    </a>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+(function () {
+  const labels = JSON.parse(document.getElementById('chart-labels').textContent);
+  const data   = JSON.parse(document.getElementById('chart-data').textContent);
+  const ctx    = document.getElementById('ordersChart').getContext('2d');
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, 190);
+  gradient.addColorStop(0,   'rgba(124, 111, 255, 0.35)');
+  gradient.addColorStop(1,   'rgba(124, 111, 255, 0.02)');
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label           : 'Commandes',
+        data,
+        backgroundColor : gradient,
+        borderColor     : 'rgba(124, 111, 255, 0.9)',
+        borderWidth     : 2,
+        borderRadius    : 7,
+        hoverBackgroundColor: 'rgba(124, 111, 255, 0.55)',
+      }]
+    },
+    options: {
+      responsive        : true,
+      maintainAspectRatio: false,
+      animation         : { duration: 900, easing: 'easeOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e2336',
+          borderColor    : '#374151',
+          borderWidth    : 1,
+          titleColor     : '#f3f4f6',
+          bodyColor      : '#9ca3af',
+          padding        : 10,
+          callbacks      : { label: c => ` ${c.parsed.y} commande${c.parsed.y > 1 ? 's' : ''}` }
+        }
+      },
+      scales: {
+        x: {
+          ticks : { color: '#9ca3af', font: { size: 11, family: 'DM Mono' } },
+          grid  : { display: false },
+          border: { display: false },
+        },
+        y: {
+          ticks     : { color: '#9ca3af', font: { size: 11, family: 'DM Mono' }, stepSize: 1 },
+          grid      : { color: '#374151' },
+          border    : { display: false },
+          beginAtZero: true,
+        }
+      }
+    }
+  });
+})();
+</script>
+
+{% endblock %}
