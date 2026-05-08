@@ -5,10 +5,10 @@ from unfold.decorators import display
 
 @admin.register(Product)
 class ProductAdmin(ModelAdmin):
-    list_display = ["name", "price", "display_stock", "quantity","image"]
+    list_display = ["name", "price", "display_stock", "quantity"]
     search_fields = ["name", "description"]
     list_filter = ["price", "quantity"]
-    list_editable = ["price", "quantity","image"] # Permet de modifier le prix/stock directement dans la liste
+    list_editable = ["price", "quantity"]
 
     @display(description="Statut Stock", label=True)
     def display_stock(self, obj):

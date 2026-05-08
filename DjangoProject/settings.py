@@ -137,7 +137,7 @@ UNFOLD = {
                         "title": "Accueil",
                         "icon" : "dashboard",
                         "link" : reverse_lazy("admin:index"),
-                        "badge": "products.dashboard.badge_alertes",
+                        
                     },
                 ],
             },
@@ -149,7 +149,7 @@ UNFOLD = {
                         "title": "Produits",
                         "icon" : "inventory_2",
                         "link" : reverse_lazy("admin:products_product_changelist"),
-                        "badge": "products.dashboard.badge_produits",
+                        
                     },
                 ],
             },
@@ -161,7 +161,7 @@ UNFOLD = {
                         "title": "Commandes",
                         "icon" : "shopping_cart",
                         "link" : reverse_lazy("admin:orders_order_changelist"),
-                        "badge": "products.dashboard.badge_commandes",
+                        
                     },
                     {
                         "title": "Paniers Actifs",

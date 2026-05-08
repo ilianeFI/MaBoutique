@@ -1,430 +1,431 @@
-{% extends 'admin/base_site.html' %}
-{% load i18n humanize %}
+{% extends 'unfold/layouts/base_simple.html' %}
+{% load i18n %}
 
-{# ── 1. On cache les titres et breadcrumbs natifs de Django ── #}
-{% block breadcrumbs %}{% endblock %}
-{% block content_title %}{% endblock %}
+{% block extrahead %}
+    {# json_script tags MUST be in head — never in content block or they render as visible text #}
+    {% if chart_labels %}{{ chart_labels|json_script:"chart-labels" }}{% endif %}
+    {% if chart_data %}{{ chart_data|json_script:"chart-data" }}{% endif %}
+{% endblock %}
 
 {% block content %}
-{{ chart_labels|json_script:"chart-labels" }}
-{{ chart_data|json_script:"chart-data" }}
+<div class="px-6 py-8 lg:px-10">
 
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-<style>
-/* ── 2. On retire le sélecteur universel (*) qui cassait le menu Unfold ── */
-/* On applique les box-sizing uniquement au contenu du dashboard */
-
-:root {
-  --bg     : transparent; /* Laisse le fond d'Unfold gérer la couleur principale */
-  --s1     : #111827; /* Adapté aux couleurs Unfold */
-  --s2     : #1f2937;
-  --s3     : #374151;
-  --border : #374151;
-  --muted  : #9ca3af;
-  --txt    : #f3f4f6;
-  --white  : #ffffff;
-  --purple : #8b5cf6;
-  --purple2: #a78bfa;
-  --green  : #10b981;
-  --amber  : #f59e0b;
-  --red    : #ef4444;
-  --r      : 14px;
-  --r-sm   : 9px;
-}
-
-/* On cible uniquement les éléments dans .db pour ne pas polluer l'admin */
-.db * { box-sizing: border-box; }
-
-/* ── 3. On corrige les marges du conteneur principal ── */
-.db { 
-  font-family: 'Sora', sans-serif; 
-  padding: 0 0 30px 0; /* Unfold gère déjà les marges gauche/droite */
-  /* min-height supprimé pour éviter la double barre de défilement */
-}
-
-/* ── Header ───────────────────────────── */
-.db-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; margin-top: 10px; }
-.db-greeting { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
-.db-title { font-size: 26px; font-weight: 700; color: var(--white); letter-spacing: -.6px; margin: 0; }
-.db-title span { color: var(--purple2); }
-.db-badges { display: flex; gap: 8px; align-items: center; }
-.badge { display: flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 500; border: 1px solid; margin: 0;}
-.badge-live { background: #00e5a010; border-color: #00e5a030; color: var(--green); }
-.badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
-@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
-
-/* ── KPI grid ─────────────────────────── */
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-.kpi { background: var(--s2); border: 1px solid var(--border); border-radius: var(--r); padding: 22px 20px; position: relative; overflow: hidden; transition: transform .2s, border-color .25s; cursor: default; }
-.kpi:hover { transform: translateY(-3px); }
-.kpi::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: var(--r) var(--r) 0 0; }
-.kpi.purple::after { background: linear-gradient(90deg, var(--purple), var(--purple2)); }
-.kpi.green::after  { background: linear-gradient(90deg, var(--green), #00ffcc); }
-.kpi.amber::after  { background: linear-gradient(90deg, var(--amber), #ff8c42); }
-.kpi.red::after    { background: linear-gradient(90deg, var(--red), #ff8fa3); }
-.kpi:hover.purple  { border-color: #7c6fff44; }
-.kpi:hover.green   { border-color: #00e5a044; }
-.kpi:hover.amber   { border-color: #ffb83044; }
-.kpi:hover.red     { border-color: #ff4d6a44; }
-
-.kpi-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
-.kpi-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-.kpi-icon.purple { background: #7c6fff15; color: var(--purple2); }
-.kpi-icon.green  { background: #00e5a015; color: var(--green); }
-.kpi-icon.amber  { background: #ffb83015; color: var(--amber); }
-.kpi-icon.red    { background: #ff4d6a15; color: var(--red); }
-.kpi-icon .material-symbols-outlined { font-size: 22px; }
-
-.kpi-chip { font-size: 10px; font-family: 'DM Mono', monospace; padding: 3px 9px; border-radius: 20px; font-weight: 500; }
-.chip-green { background: #00e5a015; color: var(--green); }
-.chip-red   { background: #ff4d6a15; color: var(--red); }
-.chip-amber { background: #ffb83015; color: var(--amber); }
-
-.kpi-val { font-size: 36px; font-weight: 700; letter-spacing: -1.5px; color: var(--white); font-variant-numeric: tabular-nums; line-height: 1; margin: 0; }
-.kpi-lbl { font-size: 12px; color: var(--muted); margin-top: 6px; }
-
-/* ── Main layout ──────────────────────── */
-.main-grid { display: grid; grid-template-columns: 1fr 310px; gap: 14px; margin-bottom: 14px; }
-.col-right  { display: flex; flex-direction: column; gap: 14px; }
-
-/* ── Panel ────────────────────────────── */
-.panel { background: var(--s2); border: 1px solid var(--border); border-radius: var(--r); padding: 22px; }
-.panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-.panel-title { font-size: 13px; font-weight: 600; color: var(--txt); display: flex; align-items: center; gap: 8px; margin: 0;}
-.panel-title .material-symbols-outlined { font-size: 17px; color: var(--muted); }
-.panel-link { font-size: 11px; color: var(--purple2); text-decoration: none; font-weight: 500; opacity: .8; transition: opacity .2s; }
-.panel-link:hover { opacity: 1; }
-
-/* ── Chart ────────────────────────────── */
-.chart-box { height: 190px; position: relative; }
-
-/* ── Orders table ─────────────────────── */
-.orders { display: flex; flex-direction: column; gap: 8px; }
-.order { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--s1); border: 1px solid var(--border); border-radius: var(--r-sm); transition: border-color .2s; }
-.order:hover { border-color: #7c6fff44; }
-.order-l { display: flex; align-items: center; gap: 11px; }
-.ava { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
-.ava-1 { background: linear-gradient(135deg,#7c6fff,#b8aeff); }
-.ava-2 { background: linear-gradient(135deg,#ffb830,#ff7d42); }
-.ava-3 { background: linear-gradient(135deg,#00e5a0,#00b8d4); }
-.ava-4 { background: linear-gradient(135deg,#ff4d6a,#ff87ab); }
-.ava-5 { background: linear-gradient(135deg,#38d9ff,#7c6fff); }
-.order-name { font-size: 12px; font-weight: 600; color: var(--txt); }
-.order-id   { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
-.order-r    { display: flex; align-items: center; gap: 10px; }
-.order-amt  { font-size: 13px; font-weight: 700; color: var(--txt); font-family: 'DM Mono', monospace; }
-.pill { font-size: 9px; font-weight: 700; padding: 3px 9px; border-radius: 20px; letter-spacing: .5px; text-transform: uppercase; border: 1px solid; font-family: 'DM Mono', monospace; }
-.pill-green { background:#00e5a012; color:var(--green); border-color:#00e5a030; }
-.pill-amber { background:#ffb83012; color:var(--amber); border-color:#ffb83030; }
-.pill-red   { background:#ff4d6a12; color:var(--red);   border-color:#ff4d6a30; }
-.pill-gray  { background:#7a85a012; color:var(--muted); border-color:#7a85a030; }
-
-/* ── Stock bars ───────────────────────── */
-.stocks { display: flex; flex-direction: column; gap: 12px; }
-.stock-row { display: flex; align-items: center; gap: 10px; }
-.stock-name  { font-size: 12px; color: var(--txt); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.stock-track { height: 4px; width: 80px; background: var(--border); border-radius: 2px; flex-shrink: 0; }
-.stock-fill  { height: 4px; border-radius: 2px; transition: width .6s ease; }
-.stock-qty   { font-size: 11px; font-family: 'DM Mono', monospace; font-weight: 600; min-width: 22px; text-align: right; }
-
-/* ── Mini metrics ─────────────────────── */
-.mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.mini { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 14px 16px; }
-.mini-val { font-size: 20px; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--white); }
-.mini-lbl { font-size: 10px; color: var(--muted); margin-top: 4px; }
-
-/* ── CA card ──────────────────────────── */
-.ca-card { background: linear-gradient(135deg, #111827 0%, #1f2937 100%); border: 1px solid var(--border); border-radius: var(--r); padding: 22px; }
-.ca-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-.ca-value { font-size: 24px; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--green); letter-spacing: -1px; margin: 0;}
-.ca-sub   { font-size: 13px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--txt); }
-.ca-divider { height: 1px; background: var(--border); margin: 14px 0; }
-
-/* ── Footer ───────────────────────────── */
-.db-footer { display: flex; align-items: center; justify-content: space-between; background: var(--s2); border: 1px solid var(--border); border-radius: var(--r); padding: 13px 20px; margin-top: 14px; }
-.footer-item { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-.footer-dot  { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
-.footer-link { color: var(--purple2); text-decoration: none; display: flex; align-items: center; gap: 5px; font-size: 11px; }
-
-/* ── Empty state ──────────────────────── */
-.empty { text-align: center; padding: 24px; font-size: 12px; color: var(--muted); }
-</style>
-
-<div class="db">
-
-  {# ── Header ──────────────────────────────────────────────── #}
-  <div class="db-head">
-    <div>
-      <div class="db-greeting">Bienvenue sur votre espace admin</div>
-      <h1 class="db-title">Tableau de bord <span>Maboutique</span></h1>
-    </div>
-    <div class="db-badges">
-      <div class="badge badge-live">
-        <div class="badge-dot"></div>
-        Live
-      </div>
-    </div>
-  </div>
-
-  {# ── KPIs ────────────────────────────────────────────────── #}
-  <div class="kpi-grid">
-
-    <div class="kpi purple">
-      <div class="kpi-top">
-        <div class="kpi-icon purple">
-          <span class="material-symbols-outlined">inventory_2</span>
+    <!-- ══ HEADER ══════════════════════════════════════ -->
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-8">
+        <div>
+            <p class="text-xs font-semibold tracking-widest uppercase mb-1"
+               style="color: #c9a96e; letter-spacing: 3px;">
+                BIENVENUE SUR VOTRE ESPACE ADMIN
+            </p>
+            <h1 class="text-3xl font-bold text-white">
+                Tableau de bord
+                <span style="color: #c9a96e;">Maboutique</span>
+            </h1>
         </div>
-        <div class="kpi-chip chip-green">Actif</div>
-      </div>
-      <p class="kpi-val">{{ total_products|default:"0" }}</p>
-      <div class="kpi-lbl">Produits en catalogue</div>
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
+             style="background: rgba(74,222,128,.12); border: 1px solid rgba(74,222,128,.25); color: #4ade80;">
+            <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block"></span>
+            Live
+        </div>
     </div>
 
-    <div class="kpi green">
-      <div class="kpi-top">
-        <div class="kpi-icon green">
-          <span class="material-symbols-outlined">shopping_cart</span>
-        </div>
-        <div class="kpi-chip chip-green">+{{ orders_ce_mois|default:"0" }} mois</div>
-      </div>
-      <p class="kpi-val">{{ total_orders|default:"0" }}</p>
-      <div class="kpi-lbl">Commandes reçues</div>
-    </div>
 
-    <div class="kpi amber">
-      <div class="kpi-top">
-        <div class="kpi-icon amber">
-          <span class="material-symbols-outlined">shopping_basket</span>
-        </div>
-        <div class="kpi-chip chip-amber">En cours</div>
-      </div>
-      <p class="kpi-val">{{ paniers_actifs|default:"0" }}</p>
-      <div class="kpi-lbl">Paniers actifs</div>
-    </div>
+    <!-- ══ STAT CARDS ══════════════════════════════════ -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
 
-    <div class="kpi {% if low_stock > 0 %}red{% else %}green{% endif %}">
-      <div class="kpi-top">
-        <div class="kpi-icon {% if low_stock > 0 %}red{% else %}green{% endif %}">
-          <span class="material-symbols-outlined">{% if low_stock > 0 %}warning{% else %}check_circle{% endif %}</span>
-        </div>
-        <div class="kpi-chip {% if low_stock > 0 %}chip-red{% else %}chip-green{% endif %}">
-          {% if low_stock > 0 %}Urgent{% else %}OK{% endif %}
-        </div>
-      </div>
-      <p class="kpi-val" {% if low_stock > 0 %}style="color:var(--red)"{% endif %}>{{ low_stock|default:"0" }}</p>
-      <div class="kpi-lbl">Stock critique (≤ 5)</div>
-    </div>
-
-  </div>
-
-  {# ── Contenu principal ───────────────────────────────────── #}
-  <div class="main-grid">
-
-    <div style="display:flex;flex-direction:column;gap:14px;">
-
-      {# Graphique #}
-      <div class="panel">
-        <div class="panel-head">
-          <h2 class="panel-title">
-            <span class="material-symbols-outlined">bar_chart</span>
-            Commandes — 7 derniers jours
-          </h2>
-        </div>
-        <div class="chart-box">
-          <canvas id="ordersChart"></canvas>
-        </div>
-      </div>
-
-      {# Commandes récentes #}
-      <div class="panel">
-        <div class="panel-head">
-          <h2 class="panel-title">
-            <span class="material-symbols-outlined">receipt_long</span>
-            Commandes récentes
-          </h2>
-          <a class="panel-link" href="/admin/orders/order/">Voir toutes →</a>
-        </div>
-        <div class="orders">
-          {% for order in recent_orders %}
-          <div class="order">
-            <div class="order-l">
-              <div class="ava ava-{{ forloop.counter }}">
-                {% if order.user %}{{ order.user.first_name|first|upper }}{{ order.user.last_name|first|upper }}{% else %}?{% endif %}
-              </div>
-              <div>
-                <div class="order-name">
-                  {% if order.user %}{{ order.user.get_full_name|default:order.user.email }}{% else %}Invité{% endif %}
+        <!-- Produits -->
+        <div class="rounded-2xl p-5 relative overflow-hidden transition-all duration-300 hover:-translate-y-1"
+             style="background: #1e2736; border: 1px solid rgba(255,255,255,.07);">
+            <div class="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl"
+                 style="background: linear-gradient(90deg, #818cf8, transparent);"></div>
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                     style="background: rgba(129,140,248,.15);">
+                    <span class="material-symbols-outlined text-lg" style="color: #818cf8;">inventory_2</span>
                 </div>
-                <div class="order-id">#CMD-{{ order.id|stringformat:"05d" }}</div>
-              </div>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+                      style="background: rgba(129,140,248,.15); color: #818cf8;">Actif</span>
             </div>
-            <div class="order-r">
-              {% if order.prix %}
-              <div class="order-amt">{{ order.prix|floatformat:0|intcomma }} MAD</div>
-              {% endif %}
-              {% if order.status == "completed" or order.status == "paid" %}
-                <div class="pill pill-green">Payé</div>
-              {% elif order.status == "pending" %}
-                <div class="pill pill-amber">En attente</div>
-              {% elif order.status == "cancelled" or order.status == "refunded" %}
-                <div class="pill pill-red">Annulé</div>
-              {% else %}
-                <div class="pill pill-gray">{{ order.status }}</div>
-              {% endif %}
-            </div>
-          </div>
-          {% empty %}
-          <div class="empty">Aucune commande pour le moment.</div>
-          {% endfor %}
+            <p class="text-4xl font-bold text-white mb-1">{{ total_products }}</p>
+            <p class="text-xs font-medium" style="color: rgba(255,255,255,.45);">Produits en catalogue</p>
         </div>
-      </div>
+
+        <!-- Commandes -->
+        <div class="rounded-2xl p-5 relative overflow-hidden transition-all duration-300 hover:-translate-y-1"
+             style="background: #1e2736; border: 1px solid rgba(255,255,255,.07);">
+            <div class="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl"
+                 style="background: linear-gradient(90deg, #34d399, transparent);"></div>
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                     style="background: rgba(52,211,153,.15);">
+                    <span class="material-symbols-outlined text-lg" style="color: #34d399;">shopping_cart</span>
+                </div>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+                      style="background: rgba(52,211,153,.15); color: #34d399;">+1 mois</span>
+            </div>
+            <p class="text-4xl font-bold text-white mb-1">{{ total_orders }}</p>
+            <p class="text-xs font-medium" style="color: rgba(255,255,255,.45);">Commandes reçues</p>
+        </div>
+
+        <!-- Paniers -->
+        <div class="rounded-2xl p-5 relative overflow-hidden transition-all duration-300 hover:-translate-y-1"
+             style="background: #1e2736; border: 1px solid rgba(255,255,255,.07);">
+            <div class="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl"
+                 style="background: linear-gradient(90deg, #c9a96e, transparent);"></div>
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                     style="background: rgba(201,169,110,.15);">
+                    <span class="material-symbols-outlined text-lg" style="color: #c9a96e;">shopping_basket</span>
+                </div>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+                      style="background: rgba(201,169,110,.15); color: #c9a96e;">En cours</span>
+            </div>
+            <p class="text-4xl font-bold text-white mb-1">{{ total_carts|default:"—" }}</p>
+            <p class="text-xs font-medium" style="color: rgba(255,255,255,.45);">Paniers actifs</p>
+        </div>
+
+        <!-- Stock critique -->
+        <div class="rounded-2xl p-5 relative overflow-hidden transition-all duration-300 hover:-translate-y-1"
+             style="background: #1e2736; border: 1px solid rgba(255,255,255,.07);">
+            <div class="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl"
+                 style="background: linear-gradient(90deg, {% if low_stock > 0 %}#f87171{% else %}#34d399{% endif %}, transparent);"></div>
+            <div class="flex items-start justify-between mb-4">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                     style="background: rgba({% if low_stock > 0 %}248,113,113{% else %}52,211,153{% endif %},.15);">
+                    <span class="material-symbols-outlined text-lg"
+                          style="color: {% if low_stock > 0 %}#f87171{% else %}#34d399{% endif %};">
+                        {% if low_stock > 0 %}warning{% else %}check_circle{% endif %}
+                    </span>
+                </div>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+                      style="background: rgba({% if low_stock > 0 %}248,113,113{% else %}52,211,153{% endif %},.15);
+                             color: {% if low_stock > 0 %}#f87171{% else %}#34d399{% endif %};">
+                    {% if low_stock > 0 %}Alerte{% else %}OK{% endif %}
+                </span>
+            </div>
+            <p class="text-4xl font-bold text-white mb-1">{{ low_stock }}</p>
+            <p class="text-xs font-medium" style="color: rgba(255,255,255,.45);">Stock critique (≤ 5)</p>
+        </div>
 
     </div>
 
-    {# Colonne droite #}
-    <div class="col-right">
 
-      {# CA #}
-      <div class="ca-card">
-        <div class="ca-label">Chiffre d'affaires — ce mois</div>
-        <p class="ca-value">{{ ca_mois|default:"0"|floatformat:0|intcomma }} MAD</p>
-        <div class="ca-divider"></div>
-        <div class="ca-label">Total cumulé</div>
-        <div class="ca-sub">{{ ca_total|default:"0"|floatformat:0|intcomma }} MAD</div>
-      </div>
+    <!-- ══ CHART + REVENUE ROW ══════════════════════════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
 
-      {# Stock critique #}
-      <div class="panel">
-        <div class="panel-head">
-          <h2 class="panel-title">
-            <span class="material-symbols-outlined" style="color:var(--amber)">local_fire_department</span>
-            Stock critique
-          </h2>
-          <a class="panel-link" href="/admin/products/product/?quantity__lte=5">Gérer →</a>
-        </div>
-        <div class="stocks">
-          {% for p in critical_products %}
-          <div class="stock-row">
-            <div class="stock-name" title="{{ p.name }}">{{ p.name }}</div>
-            <div class="stock-track">
-              <div class="stock-fill" style="
-                width: {% if p.quantity == 0 %}4{% else %}{{ p.quantity }}0{% endif %}%;
-                background: {% if p.quantity == 0 or p.quantity <= 2 %}var(--red){% elif p.quantity <= 4 %}var(--amber){% else %}var(--green){% endif %};
-              "></div>
+        <!-- Chart -->
+        <div class="lg:col-span-2 rounded-2xl p-6"
+             style="background: #1e2736; border: 1px solid rgba(255,255,255,.07);">
+            <div class="flex items-center gap-2 mb-6">
+                <span class="material-symbols-outlined text-base" style="color: #c9a96e;">bar_chart</span>
+                <h3 class="font-semibold text-white text-sm">Commandes — 7 derniers jours</h3>
             </div>
-            <div class="stock-qty" style="color:{% if p.quantity == 0 or p.quantity <= 2 %}var(--red){% elif p.quantity <= 4 %}var(--amber){% else %}var(--green){% endif %}">
-              {{ p.quantity }}
+            <div style="height: 200px; position: relative;">
+                <canvas id="ordersChart"></canvas>
             </div>
-          </div>
-          {% empty %}
-          <div class="empty">✓ Aucun produit en rupture</div>
-          {% endfor %}
         </div>
-      </div>
 
-      {# Mini stats #}
-      <div class="panel">
-        <div class="panel-head">
-          <h2 class="panel-title">
-            <span class="material-symbols-outlined">insights</span>
-            Résumé
-          </h2>
+        <!-- Revenue -->
+        <div class="rounded-2xl p-6 flex flex-col justify-between"
+             style="background: #1e2736; border: 1px solid rgba(255,255,255,.07);">
+
+            <div>
+                <p class="text-xs font-semibold tracking-widest uppercase mb-2"
+                   style="color: rgba(255,255,255,.35); letter-spacing: 2px;">
+                    Chiffre d'affaires — ce mois
+                </p>
+                <p class="text-4xl font-bold mb-1" style="color: #34d399;">
+                    {{ revenue_month|default:"0" }}
+                    <span class="text-xl font-normal" style="color: rgba(52,211,153,.6);">MAD</span>
+                </p>
+            </div>
+
+            <div style="border-top: 1px solid rgba(255,255,255,.07);" class="pt-4 mt-4">
+                <p class="text-xs font-semibold tracking-widest uppercase mb-2"
+                   style="color: rgba(255,255,255,.35); letter-spacing: 2px;">
+                    Total cumulé
+                </p>
+                <p class="text-2xl font-bold text-white">
+                    {{ revenue_total|default:"0" }}
+                    <span class="text-base font-normal" style="color: rgba(255,255,255,.4);">MAD</span>
+                </p>
+            </div>
+
+            <div style="border-top: 1px solid rgba(255,255,255,.07);" class="pt-4 mt-4">
+                <p class="text-xs font-semibold tracking-widest uppercase mb-3"
+                   style="color: rgba(255,255,255,.35); letter-spacing: 2px;">
+                    Panier moyen
+                </p>
+                <p class="text-2xl font-bold" style="color: #c9a96e;">
+                    {{ avg_order|default:"0" }}
+                    <span class="text-base font-normal" style="color: rgba(201,169,110,.6);">MAD</span>
+                </p>
+            </div>
+
         </div>
-        <div class="mini-grid">
-          <div class="mini">
-            <div class="mini-val" style="color:var(--purple2)">{{ total_clients|default:"0" }}</div>
-            <div class="mini-lbl">Clients total</div>
-          </div>
-          <div class="mini">
-            <div class="mini-val" style="color:var(--green)">{{ nouveaux_clients|default:"0" }}</div>
-            <div class="mini-lbl">Nouveaux mois</div>
-          </div>
-          <div class="mini">
-            <div class="mini-val">{{ out_of_stock|default:"0" }}</div>
-            <div class="mini-lbl">Rupture totale</div>
-          </div>
-          <div class="mini">
-            <div class="mini-val" style="color:var(--amber)">{{ orders_ce_mois|default:"0" }}</div>
-            <div class="mini-lbl">Cmds ce mois</div>
-          </div>
+    </div>
+
+
+    <!-- ══ RECENT ORDERS ════════════════════════════════ -->
+    <div class="rounded-2xl overflow-hidden mb-8"
+         style="background: #1e2736; border: 1px solid rgba(255,255,255,.07);">
+
+        <!-- Table header -->
+        <div class="flex items-center justify-between px-6 py-4"
+             style="border-bottom: 1px solid rgba(255,255,255,.07);">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-base" style="color: #c9a96e;">receipt_long</span>
+                <h3 class="font-semibold text-white text-sm">Dernières commandes</h3>
+            </div>
+            <a href="/admin/orders/order/"
+               class="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+               style="color: #c9a96e; background: rgba(201,169,110,.1); border: 1px solid rgba(201,169,110,.2);">
+                Voir tout →
+            </a>
         </div>
-      </div>
+
+        {% if recent_orders %}
+        <!-- thead -->
+        <div class="grid gap-4 px-6 py-3 text-xs font-semibold tracking-wider uppercase"
+             style="grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr;
+                    color: rgba(255,255,255,.3);
+                    border-bottom: 1px solid rgba(255,255,255,.05);">
+            <span>N° Commande</span>
+            <span>Client</span>
+            <span>Date</span>
+            <span>Montant</span>
+            <span>Statut</span>
+        </div>
+
+        {% for order in recent_orders %}
+        <a href="/admin/orders/order/{{ order.id }}/change/"
+           class="grid gap-4 px-6 py-3.5 transition-all hover:bg-white/5 items-center"
+           style="grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr;
+                  border-bottom: 1px solid rgba(255,255,255,.04);
+                  text-decoration: none;">
+
+            <span class="text-sm font-bold" style="color: #c9a96e;">#{{ order.number }}</span>
+
+            <div>
+                <p class="text-sm font-medium text-white">{{ order.user.first_name }} {{ order.user.last_name }}</p>
+                <p class="text-xs" style="color: rgba(255,255,255,.35);">{{ order.user.email }}</p>
+            </div>
+
+            <span class="text-sm" style="color: rgba(255,255,255,.55);">
+                {{ order.date|date:"d/m/Y" }}
+            </span>
+
+            <span class="text-sm font-semibold text-white">
+                {{ order.prix }} <span style="color: rgba(255,255,255,.4); font-weight: 400;">MAD</span>
+            </span>
+
+            <span>
+                {% if order.status == 'pending' %}
+                    <span class="text-xs font-bold px-2 py-1 rounded-full"
+                          style="background: rgba(183,110,0,.15); color: #f59e0b; border: 1px solid rgba(245,158,11,.2);">
+                        En attente
+                    </span>
+                {% elif order.status == 'confirmed' %}
+                    <span class="text-xs font-bold px-2 py-1 rounded-full"
+                          style="background: rgba(59,130,246,.15); color: #60a5fa; border: 1px solid rgba(96,165,250,.2);">
+                        Confirmée
+                    </span>
+                {% elif order.status == 'processing' %}
+                    <span class="text-xs font-bold px-2 py-1 rounded-full"
+                          style="background: rgba(139,92,246,.15); color: #a78bfa; border: 1px solid rgba(167,139,250,.2);">
+                        En préparation
+                    </span>
+                {% elif order.status == 'shipped' %}
+                    <span class="text-xs font-bold px-2 py-1 rounded-full"
+                          style="background: rgba(201,169,110,.15); color: #c9a96e; border: 1px solid rgba(201,169,110,.2);">
+                        Expédiée
+                    </span>
+                {% elif order.status == 'delivered' %}
+                    <span class="text-xs font-bold px-2 py-1 rounded-full"
+                          style="background: rgba(52,211,153,.12); color: #34d399; border: 1px solid rgba(52,211,153,.2);">
+                        Livrée
+                    </span>
+                {% elif order.status == 'cancelled' %}
+                    <span class="text-xs font-bold px-2 py-1 rounded-full"
+                          style="background: rgba(248,113,113,.12); color: #f87171; border: 1px solid rgba(248,113,113,.2);">
+                        Annulée
+                    </span>
+                {% else %}
+                    <span class="text-xs font-bold px-2 py-1 rounded-full"
+                          style="background: rgba(255,255,255,.07); color: rgba(255,255,255,.5);">
+                        {{ order.get_status_display }}
+                    </span>
+                {% endif %}
+            </span>
+
+        </a>
+        {% endfor %}
+
+        {% else %}
+        <div class="py-12 text-center">
+            <span class="material-symbols-outlined text-4xl mb-3 block" style="color: rgba(255,255,255,.15);">
+                receipt_long
+            </span>
+            <p class="text-sm" style="color: rgba(255,255,255,.3);">Aucune commande pour le moment.</p>
+        </div>
+        {% endif %}
 
     </div>
-  </div>
 
-  {# ── Footer ──────────────────────────────────────────────── #}
-  <div class="db-footer">
-    <div class="footer-item"><div class="footer-dot"></div> Synchronisation active</div>
-    <div class="footer-item">
-      <span class="material-symbols-outlined" style="font-size:14px">schedule</span>
-      Mise à jour en temps réel
+
+    <!-- ══ BOTTOM ROW — Low stock + Quick links ═════════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        <!-- Low stock products -->
+        <div class="rounded-2xl overflow-hidden"
+             style="background: #1e2736; border: 1px solid rgba(255,255,255,.07);">
+            <div class="flex items-center gap-2 px-6 py-4"
+                 style="border-bottom: 1px solid rgba(255,255,255,.07);">
+                <span class="material-symbols-outlined text-base" style="color: #f87171;">warning</span>
+                <h3 class="font-semibold text-white text-sm">Produits en stock critique</h3>
+                {% if low_stock > 0 %}
+                <span class="ml-auto text-xs font-bold px-2 py-0.5 rounded-full"
+                      style="background: rgba(248,113,113,.15); color: #f87171;">
+                    {{ low_stock }} alerte{{ low_stock|pluralize }}
+                </span>
+                {% endif %}
+            </div>
+
+            {% if low_stock_products %}
+            {% for product in low_stock_products %}
+            <a href="/admin/products/product/{{ product.id }}/change/"
+               class="flex items-center justify-between px-6 py-3 hover:bg-white/5 transition-all"
+               style="border-bottom: 1px solid rgba(255,255,255,.04); text-decoration: none;">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                         style="background: rgba(248,113,113,.1);">
+                        <span class="material-symbols-outlined text-sm" style="color: #f87171;">inventory_2</span>
+                    </div>
+                    <span class="text-sm text-white">{{ product.name }}</span>
+                </div>
+                <span class="text-xs font-bold px-2 py-1 rounded-full flex-shrink-0"
+                      style="background: rgba(248,113,113,.12); color: #f87171; border: 1px solid rgba(248,113,113,.2);">
+                    {{ product.quantity }} restant{{ product.quantity|pluralize }}
+                </span>
+            </a>
+            {% endfor %}
+            {% else %}
+            <div class="py-8 text-center">
+                <span class="material-symbols-outlined text-3xl mb-2 block" style="color: rgba(52,211,153,.3);">
+                    check_circle
+                </span>
+                <p class="text-sm" style="color: rgba(255,255,255,.3);">Tous les stocks sont OK.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Quick actions -->
+        <div class="rounded-2xl p-6"
+             style="background: #1e2736; border: 1px solid rgba(255,255,255,.07);">
+            <div class="flex items-center gap-2 mb-5">
+                <span class="material-symbols-outlined text-base" style="color: #c9a96e;">bolt</span>
+                <h3 class="font-semibold text-white text-sm">Accès rapide</h3>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+
+                <a href="/admin/products/product/add/"
+                   class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-all hover:scale-105"
+                   style="background: rgba(129,140,248,.1); border: 1px solid rgba(129,140,248,.2); text-decoration: none;">
+                    <span class="material-symbols-outlined text-2xl" style="color: #818cf8;">add_circle</span>
+                    <span class="text-xs font-semibold" style="color: rgba(255,255,255,.7);">Nouveau produit</span>
+                </a>
+
+                <a href="/admin/orders/order/"
+                   class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-all hover:scale-105"
+                   style="background: rgba(52,211,153,.1); border: 1px solid rgba(52,211,153,.2); text-decoration: none;">
+                    <span class="material-symbols-outlined text-2xl" style="color: #34d399;">shopping_cart</span>
+                    <span class="text-xs font-semibold" style="color: rgba(255,255,255,.7);">Commandes</span>
+                </a>
+
+                <a href="/admin/users/customuser/"
+                   class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-all hover:scale-105"
+                   style="background: rgba(201,169,110,.1); border: 1px solid rgba(201,169,110,.2); text-decoration: none;">
+                    <span class="material-symbols-outlined text-2xl" style="color: #c9a96e;">group</span>
+                    <span class="text-xs font-semibold" style="color: rgba(255,255,255,.7);">Clients</span>
+                </a>
+
+                <a href="/admin/cart/cart/"
+                   class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl transition-all hover:scale-105"
+                   style="background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.2); text-decoration: none;">
+                    <span class="material-symbols-outlined text-2xl" style="color: #f87171;">shopping_basket</span>
+                    <span class="text-xs font-semibold" style="color: rgba(255,255,255,.7);">Paniers actifs</span>
+                </a>
+
+            </div>
+        </div>
+
     </div>
-    <a href="/admin/" class="footer-link">
-      <span class="material-symbols-outlined" style="font-size:14px">refresh</span>
-      Actualiser
-    </a>
-  </div>
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 (function () {
-  const labels = JSON.parse(document.getElementById('chart-labels').textContent);
-  const data   = JSON.parse(document.getElementById('chart-data').textContent);
-  const ctx    = document.getElementById('ordersChart').getContext('2d');
+    const labelsEl = document.getElementById('chart-labels');
+    const dataEl   = document.getElementById('chart-data');
 
-  const gradient = ctx.createLinearGradient(0, 0, 0, 190);
-  gradient.addColorStop(0,   'rgba(124, 111, 255, 0.35)');
-  gradient.addColorStop(1,   'rgba(124, 111, 255, 0.02)');
+    const labels = labelsEl ? JSON.parse(labelsEl.textContent) : ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+    const data   = dataEl   ? JSON.parse(dataEl.textContent)   : [0, 0, 0, 0, 0, 0, 0];
 
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label           : 'Commandes',
-        data,
-        backgroundColor : gradient,
-        borderColor     : 'rgba(124, 111, 255, 0.9)',
-        borderWidth     : 2,
-        borderRadius    : 7,
-        hoverBackgroundColor: 'rgba(124, 111, 255, 0.55)',
-      }]
-    },
-    options: {
-      responsive        : true,
-      maintainAspectRatio: false,
-      animation         : { duration: 900, easing: 'easeOutQuart' },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#1e2336',
-          borderColor    : '#374151',
-          borderWidth    : 1,
-          titleColor     : '#f3f4f6',
-          bodyColor      : '#9ca3af',
-          padding        : 10,
-          callbacks      : { label: c => ` ${c.parsed.y} commande${c.parsed.y > 1 ? 's' : ''}` }
-        }
-      },
-      scales: {
-        x: {
-          ticks : { color: '#9ca3af', font: { size: 11, family: 'DM Mono' } },
-          grid  : { display: false },
-          border: { display: false },
+    const ctx = document.getElementById('ordersChart');
+    if (!ctx) return;
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Commandes',
+                data,
+                backgroundColor: 'rgba(201,169,110,.25)',
+                borderColor: '#c9a96e',
+                borderWidth: 2,
+                borderRadius: 6,
+                hoverBackgroundColor: 'rgba(201,169,110,.45)',
+            }]
         },
-        y: {
-          ticks     : { color: '#9ca3af', font: { size: 11, family: 'DM Mono' }, stepSize: 1 },
-          grid      : { color: '#374151' },
-          border    : { display: false },
-          beginAtZero: true,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#0f1923',
+                    titleColor: '#c9a96e',
+                    bodyColor: 'rgba(255,255,255,.7)',
+                    borderColor: 'rgba(201,169,110,.3)',
+                    borderWidth: 1,
+                    padding: 10,
+                    callbacks: {
+                        label: ctx => ` ${ctx.parsed.y} commande${ctx.parsed.y !== 1 ? 's' : ''}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255,255,255,.05)' },
+                    ticks: { color: 'rgba(255,255,255,.4)', font: { size: 11 } },
+                    border: { display: false }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255,255,255,.05)' },
+                    ticks: {
+                        color: 'rgba(255,255,255,.4)', font: { size: 11 },
+                        stepSize: 1,
+                        callback: v => Number.isInteger(v) ? v : ''
+                    },
+                    border: { display: false }
+                }
+            }
         }
-      }
-    }
-  });
+    });
 })();
 </script>
 
